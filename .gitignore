@@ -1,2 +1,3 @@
 *.pyc
 transaction_database.db
+mydatabase.db

@@ -38,8 +38,11 @@ def select_transactions(conn,year,month):
 
  
     rows = cur.fetchall()
+    result=[]
     for row in rows:
-        print(row)
+        result.append(str(row))
+    return "\n".join(result)
+    
 
 def show_balance(conn,year,month):
     """
@@ -58,7 +61,7 @@ def show_balance(conn,year,month):
             income+=row[2]
         else:
             expenses+=row[2]
-    print(f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nMonthly balance: {total:.2f}£\n")
+    return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nMonthly balance: {total:.2f}£\n"
         
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement

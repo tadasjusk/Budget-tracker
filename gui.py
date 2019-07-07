@@ -95,8 +95,6 @@ class HistoryFrame(Tk.Toplevel):
         year_popmenu = Tk.OptionMenu(self,self.var_year,*years)
         year_popmenu.grid(row=1, column=0)
 
-
-
         label_month = Tk.Label(self, text="Month")
         label_month.grid(row=0,column=1)
         self.var_month = Tk.StringVar(self)
@@ -114,19 +112,22 @@ class HistoryFrame(Tk.Toplevel):
         closebtn = Tk.Button(self,text="Return", command=self.onReturn)
         closebtn.grid(row=1,column=4)
 
+        self.display = Tk.Label(self)
+        self.display.grid(row=2, columnspan=5)
+
     def onShowEntries(self):
         conn=BudgetTracker.create_connection(self.database)
         if conn == None:
             print("Error! cannot create the database connection.")
         with conn:
-            BudgetTracker.select_transactions(conn,self.var_year.get(),self.var_month.get())
+            self.display.config(text=BudgetTracker.select_transactions(conn,self.var_year.get(),self.var_month.get()))
 
     def onShowBalance(self):
         conn=BudgetTracker.create_connection(self.database)
         if conn == None:
             print("Error! cannot create the database connection.")
         with conn:
-            BudgetTracker.show_balance(conn,self.var_year.get(),self.var_month.get())
+            self.display.config(text=BudgetTracker.show_balance(conn,self.var_year.get(),self.var_month.get()))
 
     def onReturn(self):
         self.destroy()
