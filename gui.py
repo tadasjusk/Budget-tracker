@@ -55,6 +55,9 @@ class EntryFrame(Tk.Toplevel):
 
         cancelbtn = Tk.Button(self, text="Cancel", command=self.onCancel)
         cancelbtn.grid(row=1,column=6)
+
+        self.status = Tk.Label(self)
+        self.status.grid(row=2, columnspan=7, sticky=Tk.W)
         
  
     #----------------------------------------------------------------------
@@ -64,12 +67,12 @@ class EntryFrame(Tk.Toplevel):
             temp=(str(self.entry_date.get_date()),float(self.entry_value.get()),self.var_currency.get(),\
                     self.entry_description.get(),self.var_type.get())
         except:
-            print("Whooops, looks like you entered a wrong value. Try again!\n")
+            self.status.config(text="Whooops, looks like you entered a wrong value. Try again!\n")
         else:
             conn=BudgetTracker.create_connection(self.database)
 
             if conn == None:
-                print("Error! cannot create the database connection.")
+                self.status.config(text="Error! cannot create the database connection.")
             with conn:
                 BudgetTracker.create_transaction(conn,temp)
             
@@ -87,33 +90,40 @@ class HistoryFrame(Tk.Toplevel):
         Tk.Toplevel.__init__(self)
         self.title("Browse history")
 
+        label_from = Tk.Label(self, text="From: ")
+        label_from.grid(row=1, column=0)
+
         label_year = Tk.Label(self, text="Year")
-        label_year.grid(row=0,column=0)
+        label_year.grid(row=0,column=1)
         self.var_year = Tk.StringVar(self)
         self.var_year.set('2019')
         years =['2017','2018','2019']
         year_popmenu = Tk.OptionMenu(self,self.var_year,*years)
-        year_popmenu.grid(row=1, column=0)
+        year_popmenu.grid(row=1, column=1)
 
         label_month = Tk.Label(self, text="Month")
-        label_month.grid(row=0,column=1)
+        label_month.grid(row=0,column=2)
         self.var_month = Tk.StringVar(self)
         self.var_month.set('01')
         months =['01','02','03','04','05','06','07','08','09','10','11','12']
         month_popmenu = Tk.OptionMenu(self,self.var_month,*months)
-        month_popmenu.grid(row=1, column=1)
+        month_popmenu.grid(row=1, column=2)
+
+        label_to = Tk.Label(self, text="To: ")
+        label_to.grid(row=1, column=3)
+
 
         enterbtn = Tk.Button(self, text="Show entries", command=self.onShowEntries)
-        enterbtn.grid(row=1,column=2)
+        enterbtn.grid(row=2,column=0)
 
         balancebtn = Tk.Button(self, text="Show balance", command=self.onShowBalance)
-        balancebtn.grid(row=1,column=3)
+        balancebtn.grid(row=2,column=1)
         
         closebtn = Tk.Button(self,text="Return", command=self.onReturn)
-        closebtn.grid(row=1,column=4)
+        closebtn.grid(row=2,column=2)
 
         self.display = Tk.Label(self)
-        self.display.grid(row=2, columnspan=5)
+        self.display.grid(row=3, columnspan=5, sticky=Tk.W)
 
     def onShowEntries(self):
         conn=BudgetTracker.create_connection(self.database)
@@ -153,7 +163,7 @@ class MyApp:
         btn = Tk.Button(self.frame, text="Add new transaction", command=self.openEntryFrame)
         btn.grid(row=0,column=0)
 
-        show_btn = Tk.Button(self.frame, text="History", command=self.showTransactions) 
+        show_btn = Tk.Button(self.frame, text="Browse History", command=self.showTransactions) 
         show_btn.grid(row=0,column=1)
         
     def showTransactions(self):

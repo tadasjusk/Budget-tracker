@@ -55,12 +55,20 @@ def show_balance(conn,year,month):
     total=0
     expenses=0
     income=0
+    multiplier=1
     for row in rows:
-        total+=float(row[2])
+        if row[3]=="£":
+            multiplier=1
+        elif row[3]=="€":
+            multiplier=0.9
+        elif row[3]=="$":
+            multiplier=0.8
+        total+=float(row[2])*multiplier
         if float(row[2])>0:
-            income+=row[2]
+            income+=row[2]*multiplier
         else:
-            expenses+=row[2]
+            expenses+=row[2]*multiplier
+
     return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nMonthly balance: {total:.2f}£\n"
         
 def create_table(conn, create_table_sql):
