@@ -49,17 +49,17 @@ class EntryFrame(Tk.Toplevel):
         types_popmenu = Tk.OptionMenu(self, self.var_type, *types)
         types_popmenu.grid(row=1, column=4)
 
-        enterbtn = Tk.Button(self, text="Enter", command=self.onEnter)
+        enterbtn = Tk.Button(self, text="Enter", command=self.on_enter)
         enterbtn.grid(row=1, column=5)
 
-        cancelbtn = Tk.Button(self, text="Cancel", command=self.onCancel)
+        cancelbtn = Tk.Button(self, text="Cancel", command=self.on_cancel)
         cancelbtn.grid(row=1, column=6)
 
         self.status = Tk.Label(self)
         self.status.grid(row=2, columnspan=7, sticky=Tk.W)
 
     #----------------------------------------------------------------------
-    def onEnter(self):
+    def on_enter(self):
         """"""
         try:
             temp = (str(self.entry_date.get_date()),
@@ -72,16 +72,16 @@ class EntryFrame(Tk.Toplevel):
         else:
             conn = BudgetTracker.create_connection(self.database)
 
-            if conn == None:
+            if conn is None:
                 self.status.config(text="Error! cannot create the database connection.")
             with conn:
                 BudgetTracker.create_transaction(conn, temp)
 
             self.destroy()
-            self.original_frame.showWindow()
-    def onCancel(self):
+            self.original_frame.show_window()
+    def on_cancel(self):
         self.destroy()
-        self.original_frame.showWindow()
+        self.original_frame.show_window()
 
 class HistoryFrame(Tk.Toplevel):
 
@@ -106,7 +106,8 @@ class HistoryFrame(Tk.Toplevel):
         label_month.grid(row=0, column=2)
         self.var_month = Tk.StringVar(self)
         self.var_month.set('01')
-        months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+        months = ['01', '02', '03', '04', '05', '06',
+                  '07', '08', '09', '10', '11', '12']
         month_popmenu = Tk.OptionMenu(self, self.var_month, *months)
         month_popmenu.grid(row=1, column=2)
 
@@ -114,37 +115,37 @@ class HistoryFrame(Tk.Toplevel):
         label_to.grid(row=1, column=3)
 
 
-        enterbtn = Tk.Button(self, text="Show entries", command=self.onShowEntries)
+        enterbtn = Tk.Button(self, text="Show entries", command=self.on_show_entries)
         enterbtn.grid(row=2, column=0)
 
-        balancebtn = Tk.Button(self, text="Show balance", command=self.onShowBalance)
+        balancebtn = Tk.Button(self, text="Show balance", command=self.on_show_balance)
         balancebtn.grid(row=2, column=1)
 
-        closebtn = Tk.Button(self, text="Return", command=self.onReturn)
+        closebtn = Tk.Button(self, text="Return", command=self.on_return)
         closebtn.grid(row=2, column=2)
 
         self.display = Tk.Label(self)
         self.display.grid(row=3, columnspan=5, sticky=Tk.W)
 
-    def onShowEntries(self):
+    def on_show_entries(self):
         conn = BudgetTracker.create_connection(self.database)
-        if conn == None:
+        if conn is None:
             print("Error! cannot create the database connection.")
         with conn:
             self.display.config(text=BudgetTracker.select_transactions(
                 conn, self.var_year.get(), self.var_month.get()))
 
-    def onShowBalance(self):
+    def on_show_balance(self):
         conn = BudgetTracker.create_connection(self.database)
-        if conn == None:
+        if conn is None:
             print("Error! cannot create the database connection.")
         with conn:
             self.display.config(text=BudgetTracker.show_balance(
                 conn, self.var_year.get(), self.var_month.get()))
 
-    def onReturn(self):
+    def on_return(self):
         self.destroy()
-        self.original_frame.showWindow()
+        self.original_frame.show_window()
 
 
 
@@ -162,22 +163,24 @@ class MyApp:
         self.frame = Tk.Frame(parent)
         self.frame.pack()
 
-        btn = Tk.Button(self.frame, text="Add new transaction", command=self.openEntryFrame)
+        btn = Tk.Button(self.frame, text="Add new transaction",
+                        command=self.open_entry_frame)
         btn.grid(row=0, column=0)
 
-        show_btn = Tk.Button(self.frame, text="Browse History", command=self.showTransactions)
+        show_btn = Tk.Button(self.frame, text="Browse History",
+                             command=self.show_transactions)
         show_btn.grid(row=0, column=1)
 
-    def showTransactions(self):
+    def show_transactions(self):
         self.root.withdraw()
         HistoryFrame(self)
 
-    def openEntryFrame(self):
+    def open_entry_frame(self):
         """"""
         self.root.withdraw()
         EntryFrame(self)
 
-    def showWindow(self):
+    def show_window(self):
         """"""
         self.root.update()
         self.root.deiconify()

@@ -1,4 +1,3 @@
-import tkinter as Tk
 import sqlite3
 
 
@@ -24,53 +23,55 @@ def select_all_transactions(conn):
     """
     cur = conn.cursor()
     cur.execute("SELECT * FROM transactions")
- 
+
     rows = cur.fetchall()
     for row in rows:
         print(row)
-        
-def select_transactions(conn,year,month):
+
+def select_transactions(conn, year, month):
     """
     """
     cur = conn.cursor()
     cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{year}-{month}-01' AND '{year}-{month}-31'  ''')
+                    date BETWEEN '{year}-{month}-01' 
+                    AND '{year}-{month}-31'  ''')
 
- 
+
     rows = cur.fetchall()
-    result=[]
+    result = []
     for row in rows:
         result.append(str(row))
     return "\n".join(result)
-    
 
-def show_balance(conn,year,month):
+
+def show_balance(conn, year, month):
     """
     """
     cur = conn.cursor()
     cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{year}-{month}-01' AND '{year}-{month}-31'  ''')
+                    date BETWEEN '{year}-{month}-01'
+                    AND '{year}-{month}-31'  ''')
 
     rows = cur.fetchall()
-    total=0
-    expenses=0
-    income=0
-    multiplier=1
+    total = 0
+    expenses = 0
+    income = 0
+    multiplier = 1
     for row in rows:
-        if row[3]=="£":
-            multiplier=1
-        elif row[3]=="€":
-            multiplier=0.9
-        elif row[3]=="$":
-            multiplier=0.8
-        total+=float(row[2])*multiplier
-        if float(row[2])>0:
-            income+=row[2]*multiplier
+        if row[3] == "£":
+            multiplier = 1
+        elif row[3] == "€":
+            multiplier = 0.9
+        elif row[3] == "$":
+            multiplier = 0.8
+        total += float(row[2])*multiplier
+        if float(row[2]) > 0:
+            income += row[2]*multiplier
         else:
-            expenses+=row[2]*multiplier
+            expenses += row[2]*multiplier
 
     return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nMonthly balance: {total:.2f}£\n"
-        
+
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
     :param conn: Connection object
@@ -82,7 +83,7 @@ def create_table(conn, create_table_sql):
         c.execute(create_table_sql)
     except sqlite3.Error as e:
         print(e)
-def create_transaction(conn,transaction):
+def create_transaction(conn, transaction):
     """
     Create a new project into the projects table
     :param conn:
@@ -94,10 +95,8 @@ def create_transaction(conn,transaction):
     cur = conn.cursor()
     cur.execute(sql, transaction)
 
-    
 def main():
     database = "mydatabase.db"
- 
     sql_create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
                                         id integer PRIMARY KEY,
                                         date text,
@@ -106,10 +105,10 @@ def main():
                                         desc text,
                                         type text
                                     ); """
-  
+
     # create a database connection
     conn = create_connection(database)
-    
+
     if conn is not None:
         # create transactions table
         create_table(conn, sql_create_transactions_table)
@@ -117,8 +116,6 @@ def main():
     else:
         print("Error! cannot create the database connection.")
     with conn:
-       
-        create_transaction(conn,transaction)
 
         select_all_transactions(conn)
 
