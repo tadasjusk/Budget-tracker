@@ -28,13 +28,13 @@ def select_all_transactions(conn):
     for row in rows:
         print(row)
 
-def select_transactions(conn, year, month):
+def select_transactions(conn, year_from, month_from, year_to, month_to):
     """
     """
     cur = conn.cursor()
     cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{year}-{month}-01' 
-                    AND '{year}-{month}-31'  ''')
+                    date BETWEEN '{year_from}-{month_from}-01' 
+                    AND '{year_to}-{month_to}-31'  ''')
 
 
     rows = cur.fetchall()
@@ -44,13 +44,13 @@ def select_transactions(conn, year, month):
     return "\n".join(result)
 
 
-def show_balance(conn, year, month):
+def show_balance(conn, year_from, month_from, year_to, month_to):
     """
     """
     cur = conn.cursor()
     cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{year}-{month}-01'
-                    AND '{year}-{month}-31'  ''')
+                    date BETWEEN '{year_from}-{month_from}-01'
+                    AND '{year_to}-{month_to}-31'  ''')
 
     rows = cur.fetchall()
     total = 0
