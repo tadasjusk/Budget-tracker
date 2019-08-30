@@ -133,8 +133,8 @@ class HistoryFrame(Tk.Toplevel):
         closebtn = Tk.Button(self, text="Return", command=self.on_return)
         closebtn.grid(row=3, column=2)
 
-        self.display = Tk.Label(self)
-        self.display.grid(row=4, columnspan=5, rowspan=4, sticky=Tk.W)
+        self.display = Tk.Message(self)
+        self.display.grid(row=4, columnspan=5, sticky=Tk.W)
 
     def on_show_entries(self):
         conn = BudgetTracker.create_connection(self.database)
