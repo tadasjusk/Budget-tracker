@@ -70,7 +70,7 @@ def show_balance(conn, year_from, month_from, year_to, month_to):
         else:
             expenses += row[2]*multiplier
 
-    return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nMonthly balance: {total:.2f}£\n"
+    return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nTotal balance: {total:.2f}£\n"
 
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
