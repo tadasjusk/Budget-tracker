@@ -5,26 +5,29 @@ from tkcalendar import DateEntry
 import BudgetTracker
 
 
-##########################################################################
 class EntryFrame(Tk.Toplevel):
     """"""
 
-    #----------------------------------------------------------------------
     def __init__(self, original):
         """Constructor"""
         self.database = "transaction_database.db"
         self.original_frame = original
         Tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
+        self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
 
         label_date = ttk.Label(self, text="Date")
         label_date.grid(row=0, column=0)
         self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
         self.entry_date.grid(row=1, column=0)
 
+        validation = self.register(lambda char : char.isdigit() or char in ".-")
+
+
         label_value = ttk.Label(self, text="Value")
         label_value.grid(row=0, column=1)
-        self.entry_value = ttk.Entry(self)
+        self.entry_value = ttk.Entry(self, validate="key", validatecommand=(validation, '%S')
+)
         self.entry_value.grid(row=1, column=1)
 
         label_currency = ttk.Label(self, text="Currency")
@@ -57,9 +60,10 @@ class EntryFrame(Tk.Toplevel):
         cancelbtn.grid(row=1, column=6)
 
         self.status = ttk.Label(self)
-        self.status.grid(row=2, columnspan=7, sticky=Tk.W)
+        self.status.grid(row=2, columnspan=7, sticky="w")
 
-    #----------------------------------------------------------------------
+        self.focus_force()
+
     def on_enter(self):
         """"""
         try:
@@ -91,60 +95,48 @@ class HistoryFrame(Tk.Toplevel):
         self.original_frame = original
         Tk.Toplevel.__init__(self)
         self.title("Browse history")
+        self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
 
         label_from = ttk.Label(self, text="From: ")
         label_from.grid(row=1, column=0)
 
-        label_year = ttk.Label(self, text="Year")
-        label_year.grid(row=0, column=1)
-        self.var_year_from = Tk.StringVar()
-
-        years = ['2017', '2018', '2019']
-        year_from_popmenu = ttk.OptionMenu(self, self.var_year_from, '2019', *years)
-        year_from_popmenu.grid(row=1, column=1)
-
-        label_month = ttk.Label(self, text="Month")
-        label_month.grid(row=0, column=2)
-        self.var_month_from = Tk.StringVar()
-
-        months = ['01', '02', '03', '04', '05', '06',
-                  '07', '08', '09', '10', '11', '12']
-        month_from_popmenu = ttk.OptionMenu(self, self.var_month_from, '01', *months)
-        month_from_popmenu.grid(row=1, column=2)
+        self.date_from = DateEntry(self, date_pattern='yyyy-mm-dd')
+        self.date_from.grid(row=1, column=1)
 
         label_to = ttk.Label(self, text="To: ")
         label_to.grid(row=2, column=0)
 
-        self.var_year_to = Tk.StringVar()
-
-        year_to_popmenu = ttk.OptionMenu(self, self.var_year_to, '2019', *years)
-        year_to_popmenu.grid(row=2, column=1)
-
-        self.var_month_to = Tk.StringVar()
-
-        month_to_popmenu = ttk.OptionMenu(self, self.var_month_to, '01', *months)
-        month_to_popmenu.grid(row=2, column=2)
+        self.date_to = DateEntry(self, date_pattern='yyyy-mm-dd')
+        self.date_to.grid(row=2, column=1)
 
         enterbtn = ttk.Button(self, text="Show entries", command=self.on_show_entries)
-        enterbtn.grid(row=3, column=0)
+        enterbtn.grid(row=3, column=0, sticky="nesw")
 
         balancebtn = ttk.Button(self, text="Show balance", command=self.on_show_balance)
-        balancebtn.grid(row=3, column=1)
+        balancebtn.grid(row=3, column=1, sticky="nesw")
 
         closebtn = ttk.Button(self, text="Return", command=self.on_return)
-        closebtn.grid(row=3, column=2)
+        closebtn.grid(row=3, column=2, sticky="nesw")
 
-        self.display = Tk.Message(self)
-        self.display.grid(row=4, columnspan=5, sticky=Tk.W)
+        self.display = ttk.Label(self)
+        self.display.grid(row=4, columnspan=5, sticky="w")
+        
+        self.focus_force()
+
+
 
     def on_show_entries(self):
         conn = BudgetTracker.create_connection(self.database)
         if conn is None:
             print("Error! cannot create the database connection.")
         with conn:
-            self.display.config(text=BudgetTracker.select_transactions(
-                conn, self.var_year_from.get(), self.var_month_from.get(), self.var_year_to.get(),
-                self.var_month_to.get()))
+            table_data = BudgetTracker.select_transactions(
+                conn, self.date_from.get(), self.date_to.get())
+            if table_data:
+                self.display.config(text=table_data)
+            else:
+                self.display.config(text="No data to show")
+
 
     def on_show_balance(self):
         conn = BudgetTracker.create_connection(self.database)
@@ -152,8 +144,7 @@ class HistoryFrame(Tk.Toplevel):
             print("Error! cannot create the database connection.")
         with conn:
             self.display.config(text=BudgetTracker.show_balance(
-                conn, self.var_year_from.get(), self.var_month_from.get(), self.var_year_to.get(),
-                self.var_month_to.get()))
+                conn, self.date_from.get(), self.date_to.get()))
 
     def on_return(self):
         self.destroy()
@@ -162,7 +153,6 @@ class HistoryFrame(Tk.Toplevel):
 
 
 
-########################################################################
 class MyApp:
     """"""
 
@@ -182,6 +172,17 @@ class MyApp:
                              command=self.show_transactions)
         show_btn.grid(row=0, column=1)
 
+        root.update_idletasks() 
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        window_width = root.winfo_width()
+        window_height = root.winfo_height()
+            
+        x = int((screen_width / 2) - (window_width / 2))  
+        y = int((screen_height / 2) - (window_height / 2))
+        
+        self.root.geometry(f"+{x}+{y}")
+
     def show_transactions(self):
         self.root.withdraw()
         HistoryFrame(self)
@@ -198,6 +199,5 @@ class MyApp:
 
 if __name__ == "__main__":
     root = Tk.Tk()
-    root.geometry("400x300")
     app = MyApp(root)
     root.mainloop()
