@@ -36,12 +36,7 @@ def select_transactions(conn, date_from, date_to):
                     date BETWEEN '{date_from}'
                     AND '{date_to}' ORDER BY date  ''')
 
-
-    rows = cur.fetchall()
-    result = []
-    for row in rows:
-        result.append(str(row))
-    return "\n".join(result)
+    return cur.fetchall()
 
 
 def show_balance(conn, date_from, date_to):

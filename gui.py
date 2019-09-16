@@ -96,30 +96,31 @@ class HistoryFrame(Tk.Toplevel):
         Tk.Toplevel.__init__(self)
         self.title("Browse history")
         self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
+        menu_frame = ttk.Frame(self)
+        menu_frame.pack()
 
-        label_from = ttk.Label(self, text="From: ")
+        label_from = ttk.Label(menu_frame, text="From: ")
         label_from.grid(row=1, column=0)
 
-        self.date_from = DateEntry(self, date_pattern='yyyy-mm-dd')
+        self.date_from = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_from.grid(row=1, column=1)
 
-        label_to = ttk.Label(self, text="To: ")
+        label_to = ttk.Label(menu_frame, text="To: ")
         label_to.grid(row=2, column=0)
 
-        self.date_to = DateEntry(self, date_pattern='yyyy-mm-dd')
+        self.date_to = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_to.grid(row=2, column=1)
 
-        enterbtn = ttk.Button(self, text="Show entries", command=self.on_show_entries)
+        enterbtn = ttk.Button(menu_frame, text="Show entries", command=self.on_show_entries)
         enterbtn.grid(row=3, column=0, sticky="nesw")
 
-        balancebtn = ttk.Button(self, text="Show balance", command=self.on_show_balance)
+        balancebtn = ttk.Button(menu_frame, text="Show balance", command=self.on_show_balance)
         balancebtn.grid(row=3, column=1, sticky="nesw")
 
-        closebtn = ttk.Button(self, text="Return", command=self.on_return)
+        closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
         closebtn.grid(row=3, column=2, sticky="nesw")
 
-        self.display = ttk.Label(self)
-        self.display.grid(row=4, columnspan=5, sticky="w")
+        self.table_frame = None
         
         self.focus_force()
 
@@ -132,11 +133,25 @@ class HistoryFrame(Tk.Toplevel):
         with conn:
             table_data = BudgetTracker.select_transactions(
                 conn, self.date_from.get(), self.date_to.get())
-            if table_data:
-                self.display.config(text=table_data)
-            else:
-                self.display.config(text="No data to show")
+        if self.table_frame:
+            self.table_frame.destroy()
+        self.table_frame = ttk.Frame(self)
+        self.table_frame.pack(fill="x", expand=1)
+        if table_data:
 
+            ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
+            
+            ttk.Label(self.table_frame, text="Date", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=0, sticky="w")
+            ttk.Label(self.table_frame, text="Value", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=1, sticky="w")
+            ttk.Label(self.table_frame, text="Category", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=3, sticky="w")
+
+            for i, row in enumerate(table_data):
+                ttk.Label(self.table_frame, text=f"{row[1]}", relief="groove", padding=(6,0)).grid(row=5+i, column=0, sticky="nesw")
+                ttk.Label(self.table_frame, text=f"{row[2]}{row[3]}", relief="groove", padding=(6,0)).grid(row=5+i, column=1, sticky="nesw")
+                ttk.Label(self.table_frame, text=f"{row[4]}", relief="groove", padding=(6,0)).grid(row=5+i, column=2, sticky="nesw")
+                ttk.Label(self.table_frame, text=f"{row[5]}", relief="groove", padding=(6,0)).grid(row=5+i, column=3, sticky="nesw")
+        else:
+            ttk.Label(self.table_frame, text="No data to show").pack(anchor="w")
 
     def on_show_balance(self):
         conn = BudgetTracker.create_connection(self.database)
