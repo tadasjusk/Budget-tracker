@@ -15,13 +15,16 @@ class EntryFrame(Tk.Toplevel):
         Tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
         self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
+        self.status_message = Tk.StringVar()
+
 
         label_date = ttk.Label(self, text="Date")
         label_date.grid(row=0, column=0)
         self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
         self.entry_date.grid(row=1, column=0)
+        
 
-        validation = self.register(lambda char : char.isdigit() or char in ".-")
+        validation = self.register(lambda char : char.isdigit() or char in ".- ")
 
 
         label_value = ttk.Label(self, text="Value")
@@ -60,7 +63,9 @@ class EntryFrame(Tk.Toplevel):
         cancelbtn = ttk.Button(self, text="Cancel", command=self.on_cancel)
         cancelbtn.grid(row=1, column=6)
 
-        self.status = ttk.Label(self)
+        
+        self.status = ttk.Label(self, textvariable=self.status_message)
+
         self.status.grid(row=2, columnspan=7, sticky="w")
 
         self.focus_force()
@@ -74,7 +79,14 @@ class EntryFrame(Tk.Toplevel):
                     self.entry_description.get(),
                     self.var_type.get())
         except:
-            self.status.config(text="Whooops, looks like you entered a wrong value. Try again!\n")
+            if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
+                self.status_message.set(
+                    "{0}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
+                    + "Whooops, looks like you entered a wrong value. Try again!\n")
+            else:
+                self.status_message.set(self.status_message.get()
+                    + "Whooops, looks like you entered a wrong value. Try again!\n")
+
         else:
             conn = BudgetTracker.create_connection(self.database)
 
@@ -83,8 +95,19 @@ class EntryFrame(Tk.Toplevel):
             with conn:
                 BudgetTracker.create_transaction(conn, temp)
 
-            self.destroy()
-            self.original_frame.show_window()
+            if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
+                self.status_message.set(
+                    "{0}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
+                    + "Succesfully inserted into database\n")
+            else:
+                self.status_message.set(self.status_message.get()
+                    + "Succesfully inserted into database\n")
+            self.entry_value.delete(0, "end")
+            self.entry_value.insert(0, " ")
+            self.entry_description.delete(0, "end")
+            self.entry_description.insert(0, "")
+            #self.destroy()
+            #self.original_frame.show_window()
     def on_cancel(self):
         self.destroy()
         self.original_frame.show_window()
@@ -185,8 +208,7 @@ class HistoryFrame(Tk.Toplevel):
         else:
             canvas_height=self.original_frame.root.winfo_screenheight()*0.75
         self.table_canvas.config(width=table_frame.winfo_width(), height=canvas_height)
-        #table_frame.update_idletasks()
-        #pass
+
     def on_return(self):
         self.destroy()
         self.original_frame.show_window()
