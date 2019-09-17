@@ -44,12 +44,13 @@ class EntryFrame(Tk.Toplevel):
         self.entry_description.grid(row=1, column=3)
 
 
-        label_type = ttk.Label(self, text="Type")
+        label_type = ttk.Label(self, text="Category")
         label_type.grid(row=0, column=4)
         self.var_type = Tk.StringVar(self)
 
         types = {'Groceries', 'New items', 'Entertainment', 'Eating out',
-                 'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport', 'Debt'}
+                 'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
+                 'Debt', 'Salary', 'Cash withdrawal'}
         types_popmenu = ttk.OptionMenu(self, self.var_type, 'Groceries', *types)
         types_popmenu.grid(row=1, column=4)
 
@@ -96,9 +97,9 @@ class HistoryFrame(Tk.Toplevel):
         Tk.Toplevel.__init__(self)
         self.title("Browse history")
         self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
+        self.maxsize(width=0, height=original.root.winfo_screenheight())
         menu_frame = ttk.Frame(self)
-        menu_frame.pack()
-
+        menu_frame.grid(row=0, column=0, columnspan=2)
         label_from = ttk.Label(menu_frame, text="From: ")
         label_from.grid(row=1, column=0)
 
@@ -111,16 +112,14 @@ class HistoryFrame(Tk.Toplevel):
         self.date_to = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_to.grid(row=2, column=1)
 
-        enterbtn = ttk.Button(menu_frame, text="Show entries", command=self.on_show_entries)
+        enterbtn = ttk.Button(menu_frame, text="Show transactions", command=self.on_show_entries)
         enterbtn.grid(row=3, column=0, sticky="nesw")
 
-        balancebtn = ttk.Button(menu_frame, text="Show balance", command=self.on_show_balance)
-        balancebtn.grid(row=3, column=1, sticky="nesw")
-
         closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
-        closebtn.grid(row=3, column=2, sticky="nesw")
+        closebtn.grid(row=3, column=1, sticky="nesw")
 
-        self.table_frame = None
+        self.table_canvas = None
+        self.scroll_bar = None
         
         self.focus_force()
 
@@ -133,34 +132,61 @@ class HistoryFrame(Tk.Toplevel):
         with conn:
             table_data = BudgetTracker.select_transactions(
                 conn, self.date_from.get(), self.date_to.get())
-        if self.table_frame:
-            self.table_frame.destroy()
-        self.table_frame = ttk.Frame(self)
-        self.table_frame.pack(fill="x", expand=1)
+            balance = BudgetTracker.get_balance(
+                conn, self.date_from.get(), self.date_to.get())
+        if self.table_canvas:
+            self.table_canvas.destroy()
+        if self.scroll_bar:
+            self.scroll_bar.destroy()
+
+        self.table_canvas = Tk.Canvas(self)
+        table_frame = ttk.Frame(self.table_canvas)
+        self.scroll_bar = ttk.Scrollbar(self, orient="vertical", command=self.table_canvas.yview)
+        self.table_canvas.configure(yscrollcommand=self.scroll_bar.set)
+
+        self.table_canvas.grid(row=1, column=0, sticky="ns")
+        self.scroll_bar.grid(row=1, column=1, sticky="ns")
+        self.table_canvas.create_window((0,0), window=table_frame, anchor="nw", 
+                                  tags="table_frame")
+        table_frame.bind("<Configure>", lambda event : self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
+        
+
         if table_data:
 
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             
-            ttk.Label(self.table_frame, text="Date", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=0, sticky="w")
-            ttk.Label(self.table_frame, text="Value", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=1, sticky="w")
-            ttk.Label(self.table_frame, text="Category", style="Bold.TLabel", padding=(6,0)).grid(row=4, column=3, sticky="w")
+            ttk.Label(table_frame, text="Date", style="Bold.TLabel",
+                      padding=(6,0)).grid(row=4, column=0, sticky="w")
+            ttk.Label(table_frame, text="Value", style="Bold.TLabel",
+                      padding=(6,0)).grid(row=4, column=1, sticky="w")
+            ttk.Label(table_frame, text="Description", style="Bold.TLabel",
+                      padding=(6,0)).grid(row=4, column=2, sticky="w")
+            ttk.Label(table_frame, text="Category", style="Bold.TLabel",
+                      padding=(6,0)).grid(row=4, column=3, sticky="w")
 
             for i, row in enumerate(table_data):
-                ttk.Label(self.table_frame, text=f"{row[1]}", relief="groove", padding=(6,0)).grid(row=5+i, column=0, sticky="nesw")
-                ttk.Label(self.table_frame, text=f"{row[2]}{row[3]}", relief="groove", padding=(6,0)).grid(row=5+i, column=1, sticky="nesw")
-                ttk.Label(self.table_frame, text=f"{row[4]}", relief="groove", padding=(6,0)).grid(row=5+i, column=2, sticky="nesw")
-                ttk.Label(self.table_frame, text=f"{row[5]}", relief="groove", padding=(6,0)).grid(row=5+i, column=3, sticky="nesw")
+                ttk.Label(table_frame, text=f"{row[1]}", relief="groove",
+                          padding=(6,0)).grid(row=5+i, column=0, sticky="nesw")
+                ttk.Label(table_frame, text=f"{row[2]}{row[3]}", relief="groove",
+                          padding=(6,0)).grid(row=5+i, column=1, sticky="nesw")
+                ttk.Label(table_frame, text=f"{row[4]}", relief="groove",
+                          padding=(6,0)).grid(row=5+i, column=2, sticky="nesw")
+                ttk.Label(table_frame, text=f"{row[5]}", relief="groove",
+                          padding=(6,0)).grid(row=5+i, column=3, sticky="nesw")
+            ttk.Label(table_frame, text=balance).grid(columnspan=4, sticky="w")
         else:
-            ttk.Label(self.table_frame, text="No data to show").pack(anchor="w")
+            ttk.Label(table_frame, text="No data to show").pack(anchor="w")
 
-    def on_show_balance(self):
-        conn = BudgetTracker.create_connection(self.database)
-        if conn is None:
-            print("Error! cannot create the database connection.")
-        with conn:
-            self.display.config(text=BudgetTracker.show_balance(
-                conn, self.date_from.get(), self.date_to.get()))
-
+        self.grid_rowconfigure(1, weight=1)
+        table_frame.update_idletasks()
+        canvas_height = 0
+        if table_frame.winfo_height() < self.original_frame.root.winfo_screenheight()*0.75:
+            canvas_height=table_frame.winfo_height()
+        else:
+            canvas_height=self.original_frame.root.winfo_screenheight()*0.75
+        self.table_canvas.config(width=table_frame.winfo_width(), height=canvas_height)
+        #table_frame.update_idletasks()
+        #pass
     def on_return(self):
         self.destroy()
         self.original_frame.show_window()
@@ -194,7 +220,7 @@ class MyApp:
         window_height = root.winfo_height()
             
         x = int((screen_width / 2) - (window_width / 2))  
-        y = int((screen_height / 2) - (window_height / 2))
+        y = int((screen_height / 10) - (window_height / 10))
         
         self.root.geometry(f"+{x}+{y}")
 

@@ -39,7 +39,7 @@ def select_transactions(conn, date_from, date_to):
     return cur.fetchall()
 
 
-def show_balance(conn, date_from, date_to):
+def get_balance(conn, date_from, date_to):
     """
     """
     cur = conn.cursor()
@@ -65,7 +65,7 @@ def show_balance(conn, date_from, date_to):
         else:
             expenses += row[2]*multiplier
 
-    return f"Spent: {expenses:.2f}£\nIncome: {income:.2f}£\nTotal balance: {total:.2f}£\n"
+    return f"Spent: {expenses:.2f}£\nReceived: {income:.2f}£\nTotal balance: {total:.2f}£"
 
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
