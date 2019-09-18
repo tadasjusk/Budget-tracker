@@ -5,10 +5,9 @@ from tkcalendar import DateEntry
 import datetime
 import BudgetTracker
 
-
 class EntryFrame(Tk.Toplevel):
     """"""
-
+    
     def __init__(self, original):
         """Constructor"""
         self.database = "transaction_database.db"
@@ -80,13 +79,17 @@ class EntryFrame(Tk.Toplevel):
     def on_enter(self):
         """"""
         now = datetime.datetime.now().strftime("[%H:%M:%S]")
+
         try:
             temp = (self.entry_date.get_date(),
                     float(self.entry_value.get()),
                     self.var_currency.get(),
                     self.entry_description.get(),
                     self.var_type.get())
-            
+
+            if not self.entry_description.get():
+                raise EmptyDescriptionError()
+     
         except ValueError:
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
@@ -95,6 +98,14 @@ class EntryFrame(Tk.Toplevel):
             else:
                 self.status_message.set(self.status_message.get()
                     + f"{now} " + "Whooops, looks like you entered a wrong value. Try again!\n")
+        except EmptyDescriptionError:
+            if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
+                self.status_message.set(
+                    "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
+                    + f"{now} " + "Failed to insert data. Please enter description\n")
+            else:
+                self.status_message.set(self.status_message.get()
+                    + f"{now} " + "Failed to insert data. Please enter description\n")
 
         else:
             conn = BudgetTracker.create_connection(self.database)
@@ -118,6 +129,8 @@ class EntryFrame(Tk.Toplevel):
     def on_close(self):
         self.destroy()
         self.original_frame.show_window()
+
+    
 
 class HistoryFrame(Tk.Toplevel):
 
@@ -221,7 +234,7 @@ class HistoryFrame(Tk.Toplevel):
         self.destroy()
         self.original_frame.show_window()
 
-
+class EmptyDescriptionError(Exception): pass
 
 
 class MyApp:
