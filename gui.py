@@ -2,6 +2,7 @@ import tkinter as Tk
 from tkinter import ttk
 
 from tkcalendar import DateEntry
+import datetime
 import BudgetTracker
 
 
@@ -23,14 +24,20 @@ class EntryFrame(Tk.Toplevel):
         self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
         self.entry_date.grid(row=1, column=0)
         
+        def is_numeric(char):
+            """Function to validate whether entry is numeric """
+            try:
+                float(char)
+                return True
+            except ValueError:
+                return False
 
-        validation = self.register(lambda char : char.isdigit() or char in ".- ")
-
+        validation = self.register(lambda char : is_numeric(char) or char in ".-")
 
         label_value = ttk.Label(self, text="Value")
         label_value.grid(row=0, column=1)
-        self.entry_value = ttk.Entry(self, validate="key", validatecommand=(validation, '%S')
-)
+        self.entry_value = ttk.Entry(self, validate="key", validatecommand=(validation, '%S'))
+
         self.entry_value.grid(row=1, column=1)
 
         label_currency = ttk.Label(self, text="Currency")
@@ -60,7 +67,7 @@ class EntryFrame(Tk.Toplevel):
         enterbtn = ttk.Button(self, text="Enter", command=self.on_enter)
         enterbtn.grid(row=1, column=5)
 
-        cancelbtn = ttk.Button(self, text="Cancel", command=self.on_cancel)
+        cancelbtn = ttk.Button(self, text="Close", command=self.on_close)
         cancelbtn.grid(row=1, column=6)
 
         
@@ -72,20 +79,22 @@ class EntryFrame(Tk.Toplevel):
 
     def on_enter(self):
         """"""
+        now = datetime.datetime.now().strftime("[%H:%M:%S]")
         try:
-            temp = (str(self.entry_date.get_date()),
+            temp = (self.entry_date.get_date(),
                     float(self.entry_value.get()),
                     self.var_currency.get(),
                     self.entry_description.get(),
                     self.var_type.get())
-        except:
+            
+        except ValueError:
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
-                    "{0}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
-                    + "Whooops, looks like you entered a wrong value. Try again!\n")
+                    "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
+                    + f"{now} " + "Whooops, looks like you entered a wrong value. Try again!\n")
             else:
                 self.status_message.set(self.status_message.get()
-                    + "Whooops, looks like you entered a wrong value. Try again!\n")
+                    + f"{now} " + "Whooops, looks like you entered a wrong value. Try again!\n")
 
         else:
             conn = BudgetTracker.create_connection(self.database)
@@ -93,22 +102,20 @@ class EntryFrame(Tk.Toplevel):
             if conn is None:
                 self.status.config(text="Error! cannot create the database connection.")
             with conn:
-                BudgetTracker.create_transaction(conn, temp)
+                #BudgetTracker.create_transaction(conn, temp)
+                pass
 
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
-                    "{0}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
-                    + "Succesfully inserted into database\n")
+                    "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
+                    + f"{now} " + "Succesfully inserted into database\n")
             else:
                 self.status_message.set(self.status_message.get()
-                    + "Succesfully inserted into database\n")
+                    + f"{now} " + "Succesfully inserted into database\n")
             self.entry_value.delete(0, "end")
-            self.entry_value.insert(0, " ")
             self.entry_description.delete(0, "end")
-            self.entry_description.insert(0, "")
-            #self.destroy()
-            #self.original_frame.show_window()
-    def on_cancel(self):
+
+    def on_close(self):
         self.destroy()
         self.original_frame.show_window()
 
@@ -171,7 +178,8 @@ class HistoryFrame(Tk.Toplevel):
         self.scroll_bar.grid(row=1, column=1, sticky="ns")
         self.table_canvas.create_window((0,0), window=table_frame, anchor="nw", 
                                   tags="table_frame")
-        table_frame.bind("<Configure>", lambda event : self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
+        table_frame.bind("<Configure>",
+            lambda event : self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
         
 
         if table_data:
@@ -219,7 +227,7 @@ class HistoryFrame(Tk.Toplevel):
 class MyApp:
     """"""
 
-    #----------------------------------------------------------------------
+
     def __init__(self, parent):
         """Constructor"""
         self.database = "transaction_database.db"
@@ -227,7 +235,7 @@ class MyApp:
         self.root.title("Budget tracker")
 
 
-        btn = ttk.Button(self.root, text="Add new transaction",
+        btn = ttk.Button(self.root, text="Add new transactions",
                         command=self.open_entry_frame)
         btn.grid(row=0, column=0)
 
