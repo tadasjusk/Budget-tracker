@@ -143,6 +143,10 @@ class HistoryFrame(Tk.Toplevel):
         self.maxsize(width=0, height=original.root.winfo_screenheight())
         menu_frame = ttk.Frame(self)
         menu_frame.grid(row=0, column=0, columnspan=2)
+
+        label_date = ttk.Label(menu_frame, text="Date")
+        label_date.grid(row=0, column=1)
+
         label_from = ttk.Label(menu_frame, text="From: ")
         label_from.grid(row=1, column=0)
 
@@ -161,22 +165,99 @@ class HistoryFrame(Tk.Toplevel):
         closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
         closebtn.grid(row=3, column=1, sticky="nesw")
 
+        self.apply_filters_state = Tk.IntVar()
+        apply_filter_cbtn = ttk.Checkbutton(menu_frame,
+                                            variable=self.apply_filters_state, text="Apply filters",
+                                            command=self.on_change_apply_filters_state)
+        apply_filter_cbtn.grid(row=0, column=2, columnspan=2)
+
+        show_only_label = ttk.Label(menu_frame, text="Show only from category:")
+        show_only_label.grid(row=1, column=2, columnspan=3)
+
+        categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
+                 'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
+                 'Debt', 'Salary', 'Cash withdrawal', 'All'}
+        self.var_category = Tk.StringVar(self)
+        self.show_only_menu = ttk.OptionMenu(menu_frame, self.var_category, "All", *categories)
+        self.show_only_menu.grid(row=1, column=5)
+        self.show_only_menu.configure(state="disabled")
+
+        self.in_value_range_state = Tk.IntVar()
+        self.in_value_range_cbutton = ttk.Checkbutton(menu_frame,
+                                           variable=self.in_value_range_state,
+                                           text="In value range: ",
+                                           command=self.on_change_in_value_range_state)
+        self.in_value_range_cbutton.grid(row=2, column=2, columnspan=4)
+        self.in_value_range_cbutton.configure(state="disabled")
+
+        value_range_min_label = ttk.Label(menu_frame, text="Min(£):")
+        value_range_min_label.grid(row=3, column=2)
+
+        self.minimum_value_entry = ttk.Entry(menu_frame, width=6)
+        self.minimum_value_entry.grid(row=3, column=3)
+        self.minimum_value_entry.configure(state="disabled")
+
+        value_range_max_label = ttk.Label(menu_frame, text="Max(£):")
+        value_range_max_label.grid(row=3, column=4)
+
+        self.maximum_value_entry = ttk.Entry(menu_frame, width=6)
+        self.maximum_value_entry.grid(row=3, column=5)
+        self.maximum_value_entry.configure(state="disabled")
+
         self.table_canvas = None
         self.scroll_bar = None
         
         self.focus_force()
 
+    def on_change_apply_filters_state(self):
+        if self.apply_filters_state.get():
+            self.show_only_menu.configure(state="enabled")
+            self.in_value_range_cbutton.configure(state="enabled")
+            if self.in_value_range_state.get():
+                self.minimum_value_entry.configure(state="enabled")
+                self.maximum_value_entry.configure(state="enabled")
 
+        else:
+            self.show_only_menu.configure(state="disabled")
+            self.in_value_range_cbutton.configure(state="disabled")
+            self.minimum_value_entry.configure(state="disabled")
+            self.maximum_value_entry.configure(state="disabled")
+    def on_change_in_value_range_state(self):
+        if self.in_value_range_state.get():
+            self.minimum_value_entry.configure(state="enabled")
+            self.maximum_value_entry.configure(state="enabled") 
+        else:
+            self.minimum_value_entry.configure(state="disabled")
+            self.maximum_value_entry.configure(state="disabled")
 
     def on_show_entries(self):
         conn = BudgetTracker.create_connection(self.database)
         if conn is None:
             print("Error! cannot create the database connection.")
         with conn:
-            table_data = BudgetTracker.select_transactions(
-                conn, self.date_from.get(), self.date_to.get())
-            balance = BudgetTracker.get_balance(
-                conn, self.date_from.get(), self.date_to.get())
+            if self.apply_filters_state.get():
+                if self.in_value_range_state.get():
+                    table_data = BudgetTracker.select_transactions(
+                        conn, self.date_from.get(), self.date_to.get(),
+                        float(self.minimum_value_entry.get()), float(self.maximum_value_entry.get()),
+                        self.var_category.get())
+                    balance = BudgetTracker.get_balance(
+                        conn, self.date_from.get(), self.date_to.get(),
+                        float(self.minimum_value_entry.get()), float(self.maximum_value_entry.get()),
+                        self.var_category.get())
+                else:
+                    table_data = BudgetTracker.select_transactions(
+                        conn, self.date_from.get(), self.date_to.get(),
+                        self.var_category.get())
+                    balance = BudgetTracker.get_balance(
+                        conn, self.date_from.get(), self.date_to.get(),
+                        self.var_category.get())
+            else:
+                table_data = BudgetTracker.select_transactions(
+                    conn, self.date_from.get(), self.date_to.get())
+                balance = BudgetTracker.get_balance(
+                    conn, self.date_from.get(), self.date_to.get())                
+
         if self.table_canvas:
             self.table_canvas.destroy()
         if self.scroll_bar:

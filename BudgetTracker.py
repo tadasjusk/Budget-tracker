@@ -28,24 +28,50 @@ def select_all_transactions(conn):
     for row in rows:
         print(row)
 
-def select_transactions(conn, date_from, date_to):
+
+def select_transactions(conn, date_from, date_to, *args):
     """
     """
     cur = conn.cursor()
-    cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{date_from}'
-                    AND '{date_to}' ORDER BY date  ''')
+    if len(args) == 0:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}'
+                        AND '{date_to}' ORDER BY date  ''')
+    if len(args) == 1:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
+                        AND (type = '{args[0]}' OR '{args[0]}' = 'All')
+                        ORDER BY date  ''')
+    if len(args) == 3:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
+                        AND value BETWEEN '{args[0]}' AND '{args[1]}'
+                        AND (type = '{args[2]}' OR '{args[2]}' = 'All')
+                        ORDER BY date  ''')
 
     return cur.fetchall()
 
 
-def get_balance(conn, date_from, date_to):
+
+def get_balance(conn, date_from, date_to, *args):
     """
     """
     cur = conn.cursor()
-    cur.execute(f'''SELECT * FROM transactions where
-                    date BETWEEN '{date_from}'
-                    AND '{date_to}'  ''')
+    if len(args) == 0:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}'
+                        AND '{date_to}' ORDER BY date  ''')
+    if len(args) == 1:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
+                        AND (type = '{args[0]}' OR '{args[0]}' = 'All')
+                        ORDER BY date  ''')
+    if len(args) == 3:
+        cur.execute(f'''SELECT * FROM transactions 
+                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
+                        AND value BETWEEN '{args[0]}' AND '{args[1]}'
+                        AND (type = '{args[2]}' OR '{args[2]}' = 'All')
+                        ORDER BY date  ''')
 
     rows = cur.fetchall()
     total = 0
@@ -66,6 +92,8 @@ def get_balance(conn, date_from, date_to):
             expenses += row[2]*multiplier
 
     return f"Spent: {expenses:.2f}£\nReceived: {income:.2f}£\nTotal balance: {total:.2f}£"
+
+
 
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
