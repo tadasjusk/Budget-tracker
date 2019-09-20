@@ -17,21 +17,12 @@ class EntryFrame(Tk.Toplevel):
         self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
         self.status_message = Tk.StringVar()
 
+        validation = self.register(lambda char : is_numeric(char) or char in ".-")
 
         label_date = ttk.Label(self, text="Date")
         label_date.grid(row=0, column=0)
         self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
         self.entry_date.grid(row=1, column=0)
-        
-        def is_numeric(char):
-            """Function to validate whether entry is numeric """
-            try:
-                float(char)
-                return True
-            except ValueError:
-                return False
-
-        validation = self.register(lambda char : is_numeric(char) or char in ".-")
 
         label_value = ttk.Label(self, text="Value")
         label_value.grid(row=0, column=1)
@@ -159,15 +150,20 @@ class HistoryFrame(Tk.Toplevel):
         self.date_to = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_to.grid(row=2, column=1)
 
-        enterbtn = ttk.Button(menu_frame, text="Show transactions", command=self.on_show_entries)
+        enterbtn = ttk.Button(menu_frame, text="Show transactions",
+                              command=self.on_show_entries)
         enterbtn.grid(row=3, column=0, sticky="nesw")
 
         closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
         closebtn.grid(row=3, column=1, sticky="nesw")
 
+        self.status_msg = ttk.Label(menu_frame, foreground="red")
+        self.status_msg.grid(row=4, column=0, columnspan=2, sticky="w")
+
         self.apply_filters_state = Tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
-                                            variable=self.apply_filters_state, text="Apply filters",
+                                            variable=self.apply_filters_state,
+                                            text="Apply filters",
                                             command=self.on_change_apply_filters_state)
         apply_filter_cbtn.grid(row=0, column=2, columnspan=2)
 
@@ -193,15 +189,28 @@ class HistoryFrame(Tk.Toplevel):
         value_range_min_label = ttk.Label(menu_frame, text="Min(£):")
         value_range_min_label.grid(row=3, column=2)
 
-        self.minimum_value_entry = ttk.Entry(menu_frame, width=6)
+        validation = self.register(lambda char : is_numeric(char) or char in ".-")
+
+        self.minimum_value_entry = ttk.Entry(menu_frame,
+                                             width=6,
+                                             justify="center",
+                                             validate="key",
+                                             validatecommand=(validation, '%S'))
         self.minimum_value_entry.grid(row=3, column=3)
+        self.minimum_value_entry.insert(0, "0.0")
         self.minimum_value_entry.configure(state="disabled")
+
 
         value_range_max_label = ttk.Label(menu_frame, text="Max(£):")
         value_range_max_label.grid(row=3, column=4)
 
-        self.maximum_value_entry = ttk.Entry(menu_frame, width=6)
+        self.maximum_value_entry = ttk.Entry(menu_frame,
+                                             width=6,
+                                             justify="center",
+                                             validate="key",
+                                             validatecommand=(validation, '%S'))
         self.maximum_value_entry.grid(row=3, column=5)
+        self.maximum_value_entry.insert(0, "0.0")
         self.maximum_value_entry.configure(state="disabled")
 
         self.search_description_state = Tk.IntVar()
@@ -258,55 +267,61 @@ class HistoryFrame(Tk.Toplevel):
         if conn is None:
             print("Error! cannot create the database connection.")
         with conn:
-            if self.apply_filters_state.get():
-                if self.in_value_range_state.get():
-                    if self.search_description_state.get():
-                        table_data = BudgetTracker.select_transactions(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            float(self.minimum_value_entry.get()),
-                            float(self.maximum_value_entry.get()),
-                            self.var_category.get(),
-                            self.search_description_entry.get())
-                        balance = BudgetTracker.get_balance(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            float(self.minimum_value_entry.get()),
-                            float(self.maximum_value_entry.get()),
-                            self.var_category.get(),
-                            self.search_description_entry.get())
+            try:
+                if self.apply_filters_state.get():
+                    if self.in_value_range_state.get():
+                        if self.search_description_state.get():
+                            table_data = BudgetTracker.select_transactions(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                float(self.minimum_value_entry.get()),
+                                float(self.maximum_value_entry.get()),
+                                self.var_category.get(),
+                                self.search_description_entry.get())
+                            balance = BudgetTracker.get_balance(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                float(self.minimum_value_entry.get()),
+                                float(self.maximum_value_entry.get()),
+                                self.var_category.get(),
+                                self.search_description_entry.get())
+                        else:
+                            table_data = BudgetTracker.select_transactions(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                float(self.minimum_value_entry.get()),
+                                float(self.maximum_value_entry.get()),
+                                self.var_category.get())
+                            balance = BudgetTracker.get_balance(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                float(self.minimum_value_entry.get()),
+                                float(self.maximum_value_entry.get()),
+                                self.var_category.get())
                     else:
-                        table_data = BudgetTracker.select_transactions(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            float(self.minimum_value_entry.get()),
-                            float(self.maximum_value_entry.get()),
-                            self.var_category.get())
-                        balance = BudgetTracker.get_balance(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            float(self.minimum_value_entry.get()),
-                            float(self.maximum_value_entry.get()),
-                            self.var_category.get())
+                        if self.search_description_state.get():
+                            table_data = BudgetTracker.select_transactions(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                self.var_category.get(),
+                                self.search_description_entry.get())
+                            balance = BudgetTracker.get_balance(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                self.var_category.get(),
+                                self.search_description_entry.get())
+                        else:
+                            table_data = BudgetTracker.select_transactions(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                self.var_category.get())
+                            balance = BudgetTracker.get_balance(
+                                conn, self.date_from.get(), self.date_to.get(),
+                                self.var_category.get())
                 else:
-                    if self.search_description_state.get():
-                        table_data = BudgetTracker.select_transactions(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            self.var_category.get(),
-                            self.search_description_entry.get())
-                        balance = BudgetTracker.get_balance(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            self.var_category.get(),
-                            self.search_description_entry.get())
-                    else:
-                        table_data = BudgetTracker.select_transactions(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            self.var_category.get())
-                        balance = BudgetTracker.get_balance(
-                            conn, self.date_from.get(), self.date_to.get(),
-                            self.var_category.get())
+                    table_data = BudgetTracker.select_transactions(
+                        conn, self.date_from.get(), self.date_to.get())
+                    balance = BudgetTracker.get_balance(
+                        conn, self.date_from.get(), self.date_to.get())
+            except ValueError:
+                self.status_msg.configure(text="Error. Invalid min or max value")
+                return
             else:
-                table_data = BudgetTracker.select_transactions(
-                    conn, self.date_from.get(), self.date_to.get())
-                balance = BudgetTracker.get_balance(
-                    conn, self.date_from.get(), self.date_to.get())                
-
+                self.status_msg.configure(text="")
+        
         if self.table_canvas:
             self.table_canvas.destroy()
         if self.scroll_bar:
@@ -409,6 +424,14 @@ class MyApp:
     def show_window(self):
         """"""
         self.root.deiconify()
+
+def is_numeric(char):
+    """Function to validate whether entry is numeric """
+    try:
+        float(char)
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == "__main__":
