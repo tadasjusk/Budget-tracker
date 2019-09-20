@@ -204,6 +204,18 @@ class HistoryFrame(Tk.Toplevel):
         self.maximum_value_entry.grid(row=3, column=5)
         self.maximum_value_entry.configure(state="disabled")
 
+        self.search_description_state = Tk.IntVar()
+        self.search_description_cbutton = ttk.Checkbutton(menu_frame,
+                                           variable=self.search_description_state,
+                                           text="Search in description: ",
+                                           command=self.on_change_search_description_state)
+        self.search_description_cbutton.grid(row=4, column=2, columnspan=4)
+        self.search_description_cbutton.configure(state="disabled")
+
+        self.search_description_entry = ttk.Entry(menu_frame)
+        self.search_description_entry.grid(row=5, column=2, columnspan=4)
+        self.search_description_entry.configure(state="disabled")
+
         self.table_canvas = None
         self.scroll_bar = None
         
@@ -213,15 +225,20 @@ class HistoryFrame(Tk.Toplevel):
         if self.apply_filters_state.get():
             self.show_only_menu.configure(state="enabled")
             self.in_value_range_cbutton.configure(state="enabled")
+            self.search_description_cbutton.configure(state="enabled")
             if self.in_value_range_state.get():
                 self.minimum_value_entry.configure(state="enabled")
                 self.maximum_value_entry.configure(state="enabled")
+            if self.search_description_state.get():
+                self.search_description_entry.configure(state="enabled")
 
         else:
             self.show_only_menu.configure(state="disabled")
             self.in_value_range_cbutton.configure(state="disabled")
             self.minimum_value_entry.configure(state="disabled")
             self.maximum_value_entry.configure(state="disabled")
+            self.search_description_cbutton.configure(state="disabled")
+            self.search_description_entry.configure(state="disabled")
     def on_change_in_value_range_state(self):
         if self.in_value_range_state.get():
             self.minimum_value_entry.configure(state="enabled")
@@ -230,6 +247,12 @@ class HistoryFrame(Tk.Toplevel):
             self.minimum_value_entry.configure(state="disabled")
             self.maximum_value_entry.configure(state="disabled")
 
+    def on_change_search_description_state(self):
+        if self.search_description_state.get():
+            self.search_description_entry.configure(state="enabled")
+        else:
+            self.search_description_entry.configure(state="disabled")
+
     def on_show_entries(self):
         conn = BudgetTracker.create_connection(self.database)
         if conn is None:
@@ -237,21 +260,47 @@ class HistoryFrame(Tk.Toplevel):
         with conn:
             if self.apply_filters_state.get():
                 if self.in_value_range_state.get():
-                    table_data = BudgetTracker.select_transactions(
-                        conn, self.date_from.get(), self.date_to.get(),
-                        float(self.minimum_value_entry.get()), float(self.maximum_value_entry.get()),
-                        self.var_category.get())
-                    balance = BudgetTracker.get_balance(
-                        conn, self.date_from.get(), self.date_to.get(),
-                        float(self.minimum_value_entry.get()), float(self.maximum_value_entry.get()),
-                        self.var_category.get())
+                    if self.search_description_state.get():
+                        table_data = BudgetTracker.select_transactions(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            float(self.minimum_value_entry.get()),
+                            float(self.maximum_value_entry.get()),
+                            self.var_category.get(),
+                            self.search_description_entry.get())
+                        balance = BudgetTracker.get_balance(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            float(self.minimum_value_entry.get()),
+                            float(self.maximum_value_entry.get()),
+                            self.var_category.get(),
+                            self.search_description_entry.get())
+                    else:
+                        table_data = BudgetTracker.select_transactions(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            float(self.minimum_value_entry.get()),
+                            float(self.maximum_value_entry.get()),
+                            self.var_category.get())
+                        balance = BudgetTracker.get_balance(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            float(self.minimum_value_entry.get()),
+                            float(self.maximum_value_entry.get()),
+                            self.var_category.get())
                 else:
-                    table_data = BudgetTracker.select_transactions(
-                        conn, self.date_from.get(), self.date_to.get(),
-                        self.var_category.get())
-                    balance = BudgetTracker.get_balance(
-                        conn, self.date_from.get(), self.date_to.get(),
-                        self.var_category.get())
+                    if self.search_description_state.get():
+                        table_data = BudgetTracker.select_transactions(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            self.var_category.get(),
+                            self.search_description_entry.get())
+                        balance = BudgetTracker.get_balance(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            self.var_category.get(),
+                            self.search_description_entry.get())
+                    else:
+                        table_data = BudgetTracker.select_transactions(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            self.var_category.get())
+                        balance = BudgetTracker.get_balance(
+                            conn, self.date_from.get(), self.date_to.get(),
+                            self.var_category.get())
             else:
                 table_data = BudgetTracker.select_transactions(
                     conn, self.date_from.get(), self.date_to.get())
