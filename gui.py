@@ -1,6 +1,6 @@
 import tkinter as Tk
 from tkinter import ttk
-
+from tkinter import messagebox
 from tkcalendar import DateEntry
 import datetime
 import BudgetTracker
@@ -157,8 +157,15 @@ class HistoryFrame(Tk.Toplevel):
         closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
         closebtn.grid(row=3, column=1, sticky="nesw")
 
+        self.delete_btn = ttk.Button(menu_frame,
+                                     text="Delete selected",
+                                     command=self.on_delete)
+        self.delete_btn.grid(row=4, column=0, sticky="nesw")
+        self.delete_btn.state(["disabled"])
+
+
         self.status_msg = ttk.Label(menu_frame, foreground="red")
-        self.status_msg.grid(row=4, column=0, columnspan=2, sticky="w")
+        self.status_msg.grid(row=5, column=0, columnspan=2, sticky="w")
 
         self.apply_filters_state = Tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
@@ -227,9 +234,27 @@ class HistoryFrame(Tk.Toplevel):
 
         self.table_canvas = None
         self.scroll_bar = None
+        self.data_entry_cbuttons = []
+        self.data_entry_ids = []
         
         self.focus_force()
 
+    def on_delete(self):
+        selected_rows = []
+        for cbutton in self.data_entry_cbuttons:
+            if cbutton.instate(["selected"]):
+                selected_rows.append(cbutton.grid_info()["row"]-1)
+        if selected_rows:
+            if messagebox.askokcancel("Delete",
+                                      "Are you sure you want to delete selected entries?"):
+                ids_to_delete = []
+                for selected_row in selected_rows:
+                    ids_to_delete.append(self.data_entry_ids[selected_row])
+                conn = BudgetTracker.create_connection(self.database)
+                BudgetTracker.delete_transactions(conn, ids_to_delete)
+                conn.close()
+                self.on_show_entries()
+        pass
     def on_change_apply_filters_state(self):
         if self.apply_filters_state.get():
             self.show_only_menu.configure(state="enabled")
@@ -341,29 +366,39 @@ class HistoryFrame(Tk.Toplevel):
         
 
         if table_data:
+            
+            self.delete_btn.state(["!disabled"])
 
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=4, column=0, sticky="w")
+                      padding=(6,0)).grid(row=0, column=1, sticky="w")
             ttk.Label(table_frame, text="Value", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=4, column=1, sticky="w")
+                      padding=(6,0)).grid(row=0, column=2, sticky="w")
             ttk.Label(table_frame, text="Description", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=4, column=2, sticky="w")
+                      padding=(6,0)).grid(row=0, column=3, sticky="w")
             ttk.Label(table_frame, text="Category", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=4, column=3, sticky="w")
+                      padding=(6,0)).grid(row=0, column=4, sticky="w")
 
+            self.data_entry_cbuttons = []
+            self.data_entry_ids = []
             for i, row in enumerate(table_data):
+                self.data_entry_cbuttons.append(ttk.Checkbutton(table_frame))
+                self.data_entry_cbuttons[-1].grid(row=1+i, column=0)
+                self.data_entry_cbuttons[-1].state(["!alternate"])
+                self.data_entry_ids.append(row[0])
+
                 ttk.Label(table_frame, text=f"{row[1]}", relief="groove",
-                          padding=(6,0)).grid(row=5+i, column=0, sticky="nesw")
+                          padding=(6,0)).grid(row=1+i, column=1, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[2]}{row[3]}", relief="groove",
-                          padding=(6,0)).grid(row=5+i, column=1, sticky="nesw")
+                          padding=(6,0)).grid(row=1+i, column=2, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[4]}", relief="groove",
-                          padding=(6,0)).grid(row=5+i, column=2, sticky="nesw")
+                          padding=(6,0)).grid(row=1+i, column=3, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[5]}", relief="groove",
-                          padding=(6,0)).grid(row=5+i, column=3, sticky="nesw")
-            ttk.Label(table_frame, text=balance).grid(columnspan=4, sticky="w")
+                          padding=(6,0)).grid(row=1+i, column=4, sticky="nesw")
+            ttk.Label(table_frame, text=balance).grid(columnspan=5, sticky="w")
         else:
+            self.delete_btn.state(["disabled"])
             ttk.Label(table_frame, text="No data to show").pack(anchor="w")
 
         self.grid_rowconfigure(1, weight=1)

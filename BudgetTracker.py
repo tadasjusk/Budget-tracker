@@ -90,6 +90,11 @@ def get_balance(conn, date_from, date_to, *args):
 
     return f"Spent: {expenses:.2f}£\nReceived: {income:.2f}£\nTotal balance: {total:.2f}£"
 
+def delete_transactions(conn, ids):
+    cur = conn.cursor()
+    for id in ids:
+        cur.execute("DELETE from transactions WHERE id=? ", (id,))
+    conn.commit()
 
 
 def create_table(conn, create_table_sql):
