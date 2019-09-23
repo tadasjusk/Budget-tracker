@@ -72,7 +72,7 @@ class EntryFrame(Tk.Toplevel):
         now = datetime.datetime.now().strftime("[%H:%M:%S]")
 
         try:
-            temp = (self.entry_date.get_date(),
+            entry = (self.entry_date.get_date(),
                     float(self.entry_value.get()),
                     self.var_currency.get(),
                     self.entry_description.get(),
@@ -102,10 +102,9 @@ class EntryFrame(Tk.Toplevel):
             conn = BudgetTracker.create_connection(self.database)
 
             if conn is None:
-                self.status.config(text="Error! cannot create the database connection.")
+                self.status_message.set("Error! cannot create the database connection.")
             with conn:
-                #BudgetTracker.create_transaction(conn, temp)
-                pass
+                BudgetTracker.create_transaction(conn, entry)
 
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
@@ -251,10 +250,11 @@ class HistoryFrame(Tk.Toplevel):
                 for selected_row in selected_rows:
                     ids_to_delete.append(self.data_entry_ids[selected_row])
                 conn = BudgetTracker.create_connection(self.database)
-                BudgetTracker.delete_transactions(conn, ids_to_delete)
-                conn.close()
+                with conn:
+                    BudgetTracker.delete_transactions(conn, ids_to_delete)
+
                 self.on_show_entries()
-        pass
+        
     def on_change_apply_filters_state(self):
         if self.apply_filters_state.get():
             self.show_only_menu.configure(state="enabled")
@@ -403,7 +403,7 @@ class HistoryFrame(Tk.Toplevel):
 
         self.grid_rowconfigure(1, weight=1)
         table_frame.update_idletasks()
-        canvas_height = 0
+
         if table_frame.winfo_height() < self.original_frame.root.winfo_screenheight()*0.75:
             canvas_height=table_frame.winfo_height()
         else:

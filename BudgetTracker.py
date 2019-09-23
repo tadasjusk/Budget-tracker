@@ -34,34 +34,39 @@ def select_transactions(conn, date_from, date_to, *args):
     """
     cur = conn.cursor()
     if len(args) == 0:
-        cur.execute(f'''SELECT * FROM transactions 
-                        WHERE date BETWEEN '{date_from}'
-                        AND '{date_to}' ORDER BY date  ''')
+        cur.execute('''SELECT * FROM transactions 
+                        WHERE date BETWEEN ? AND ?
+                        ORDER BY date  ''', (date_from, date_to))
     if len(args) == 1:
-        cur.execute(f'''SELECT * FROM transactions 
-                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
-                        AND (type = '{args[0]}' OR '{args[0]}' = 'All')
-                        ORDER BY date  ''')
+        cur.execute('''SELECT * FROM transactions 
+                        WHERE date BETWEEN ? AND ?
+                        AND (type = ? OR ? = 'All')
+                        ORDER BY date  ''',
+                        (date_from, date_to, args[0], args[0]))
     if len(args) == 2:
-        cur.execute(f'''SELECT * FROM transactions 
-                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
-                        AND (type = '{args[0]}' OR '{args[0]}' = 'All')
-                        AND desc LIKE "%{args[1]}%"
-                        ORDER BY date  ''')        
+        cur.execute('''SELECT * FROM transactions 
+                        WHERE date BETWEEN ? AND ?
+                        AND (type = ? OR ? = 'All')
+                        AND desc LIKE ?
+                        ORDER BY date  ''',
+                        (date_from, date_to, args[0], args[0], '%'+args[1]+'%'))        
 
     if len(args) == 3:
-        cur.execute(f'''SELECT * FROM transactions 
-                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
-                        AND value BETWEEN '{args[0]}' AND '{args[1]}'
-                        AND (type = '{args[2]}' OR '{args[2]}' = 'All')
-                        ORDER BY date  ''')
+        cur.execute('''SELECT * FROM transactions 
+                        WHERE date BETWEEN ? AND ?
+                        AND value BETWEEN ? AND ?
+                        AND (type = ? OR ? = 'All')
+                        ORDER BY date  ''',
+                        (date_from, date_to, args[0], args[1], args[2], args[2]))
     if len(args) == 4:
-        cur.execute(f'''SELECT * FROM transactions 
-                        WHERE date BETWEEN '{date_from}' AND '{date_to}'
-                        AND value BETWEEN '{args[0]}' AND '{args[1]}'
-                        AND (type = '{args[2]}' OR '{args[2]}' = 'All')
-                        AND desc LIKE "%{args[3]}%"
-                        ORDER BY date  ''')
+        cur.execute('''SELECT * FROM transactions 
+                        WHERE date BETWEEN ? AND ?
+                        AND value BETWEEN ? AND ?
+                        AND (type = ? OR ? = 'All')
+                        AND desc LIKE ?
+                        ORDER BY date  ''',
+                        (date_from, date_to, args[0], args[1], args[2], args[2],
+                         '%'+args[3]+'%'))
 
     return cur.fetchall()
 
@@ -110,10 +115,10 @@ def create_table(conn, create_table_sql):
         print(e)
 def create_transaction(conn, transaction):
     """
-    Create a new project into the projects table
+    Create a new entry into the transactions table
     :param conn:
     :param transaction:
-    :return: project id
+
     """
     sql = ''' INSERT INTO transactions(date,value,currency,desc,type)
               VALUES(?,?,?,?,?) '''
