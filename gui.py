@@ -245,7 +245,8 @@ class HistoryFrame(Tk.Toplevel):
                 selected_rows.append(cbutton.grid_info()["row"]-1)
         if selected_rows:
             if messagebox.askokcancel("Delete",
-                                      "Are you sure you want to delete selected entries?"):
+                                      "Are you sure you want to delete "
+                                      f"{len(selected_rows)} selected entries?"):
                 ids_to_delete = []
                 for selected_row in selected_rows:
                     ids_to_delete.append(self.data_entry_ids[selected_row])
@@ -352,7 +353,7 @@ class HistoryFrame(Tk.Toplevel):
         if self.scroll_bar:
             self.scroll_bar.destroy()
 
-        self.table_canvas = Tk.Canvas(self)
+        self.table_canvas = Tk.Canvas(self, highlightthickness=0)
         table_frame = ttk.Frame(self.table_canvas)
         self.scroll_bar = ttk.Scrollbar(self, orient="vertical", command=self.table_canvas.yview)
         self.table_canvas.configure(yscrollcommand=self.scroll_bar.set)
