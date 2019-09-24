@@ -8,14 +8,15 @@ import backend
 class EntryFrame(Tk.Toplevel):
     """"""
     
-    def __init__(self, original):
+    def __init__(self, main):
         """Constructor"""
         self.database = "transaction_database.db"
-        self.original_frame = original
+        self.main_window = main
         Tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
-        self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
+
         self.status_message = Tk.StringVar()
+        
 
         validation = self.register(lambda char : is_numeric(char) or char in ".-")
 
@@ -66,6 +67,15 @@ class EntryFrame(Tk.Toplevel):
         self.status.grid(row=2, columnspan=7, sticky="w")
 
         self.focus_force()
+        self.main_window.is_entry_window_open = True
+
+        self.update_idletasks()
+        x_position = int(main.root.winfo_x() + main.root.winfo_width()/2
+                         - self.winfo_width()/2)
+        y_position = int(main.root.winfo_y() + main.root.winfo_height()/2
+                         - self.winfo_height()/2)
+        self.geometry(f"+{x_position}+{y_position}")
+
 
     def on_enter(self):
         """"""
@@ -117,21 +127,35 @@ class EntryFrame(Tk.Toplevel):
             self.entry_description.delete(0, "end")
 
     def on_close(self):
+        self.main_window.is_entry_window_open = False
         self.destroy()
-        self.original_frame.show_window()
 
-    
 
-class HistoryFrame(Tk.Toplevel):
+class EmptyDescriptionError(Exception): pass
 
-    def __init__(self, original):
+
+class BudgetTracker:
+    """"""
+    def __init__(self, parent):
+        """Constructor"""
         self.database = "transaction_database.db"
-        self.original_frame = original
-        Tk.Toplevel.__init__(self)
-        self.title("Browse history")
-        self.geometry(f"+{original.root.winfo_x()}+{original.root.winfo_y()}")
-        self.maxsize(width=0, height=original.root.winfo_screenheight())
-        menu_frame = ttk.Frame(self)
+        self.root = parent
+        self.root.title("Budget tracker")
+
+        self.root.update_idletasks() 
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        window_width = self.root.winfo_width()
+        window_height = self.root.winfo_height()
+            
+        x = int((screen_width / 2) - (window_width / 2))  
+        y = int((screen_height / 10) - (window_height / 10))
+        
+        self.root.geometry(f"+{x}+{y}")
+
+        self.is_entry_window_open = False
+
+        menu_frame = ttk.Frame(self.root)
         menu_frame.grid(row=0, column=0, columnspan=2)
 
         label_date = ttk.Label(menu_frame, text="Date")
@@ -151,15 +175,18 @@ class HistoryFrame(Tk.Toplevel):
 
         enterbtn = ttk.Button(menu_frame, text="Show transactions",
                               command=self.on_show_entries)
-        enterbtn.grid(row=3, column=0, sticky="nesw")
+        enterbtn.grid(row=3, column=0, columnspan=2, sticky="nesw")
 
-        closebtn = ttk.Button(menu_frame, text="Return", command=self.on_return)
-        closebtn.grid(row=3, column=1, sticky="nesw")
+        self.add_btn = ttk.Button(
+            menu_frame,
+            text="Add new transactions",
+            command=lambda: EntryFrame(self) if not self.is_entry_window_open else None)
+        self.add_btn.grid(row=4, column=0)
 
         self.delete_btn = ttk.Button(menu_frame,
                                      text="Delete selected",
                                      command=self.on_delete)
-        self.delete_btn.grid(row=4, column=0, sticky="nesw")
+        self.delete_btn.grid(row=4, column=1, sticky="nesw")
         self.delete_btn.state(["disabled"])
 
 
@@ -179,7 +206,7 @@ class HistoryFrame(Tk.Toplevel):
         categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
                  'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
                  'Debt', 'Salary', 'Cash withdrawal', 'All'}
-        self.var_category = Tk.StringVar(self)
+        self.var_category = Tk.StringVar()
         self.show_only_menu = ttk.OptionMenu(menu_frame, self.var_category, "All", *categories)
         self.show_only_menu.grid(row=1, column=5)
         self.show_only_menu.configure(state="disabled")
@@ -195,7 +222,7 @@ class HistoryFrame(Tk.Toplevel):
         value_range_min_label = ttk.Label(menu_frame, text="Min(£):")
         value_range_min_label.grid(row=3, column=2)
 
-        validation = self.register(lambda char : is_numeric(char) or char in ".-")
+        validation = self.root.register(lambda char : is_numeric(char) or char in ".-")
 
         self.minimum_value_entry = ttk.Entry(menu_frame,
                                              width=6,
@@ -236,7 +263,6 @@ class HistoryFrame(Tk.Toplevel):
         self.data_entry_cbuttons = []
         self.data_entry_ids = []
         
-        self.focus_force()
 
     def on_delete(self):
         selected_rows = []
@@ -353,9 +379,9 @@ class HistoryFrame(Tk.Toplevel):
         if self.scroll_bar:
             self.scroll_bar.destroy()
 
-        self.table_canvas = Tk.Canvas(self, highlightthickness=0)
+        self.table_canvas = Tk.Canvas(self.root, highlightthickness=0)
         table_frame = ttk.Frame(self.table_canvas)
-        self.scroll_bar = ttk.Scrollbar(self, orient="vertical", command=self.table_canvas.yview)
+        self.scroll_bar = ttk.Scrollbar(self.root, orient="vertical", command=self.table_canvas.yview)
         self.table_canvas.configure(yscrollcommand=self.scroll_bar.set)
 
         self.table_canvas.grid(row=1, column=0, sticky="ns")
@@ -365,13 +391,10 @@ class HistoryFrame(Tk.Toplevel):
         table_frame.bind("<Configure>",
             lambda event : self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
         
-
         if table_data:
             
             self.delete_btn.state(["!disabled"])
-
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
-            
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
                       padding=(6,0)).grid(row=0, column=1, sticky="w")
             ttk.Label(table_frame, text="Value", style="Bold.TLabel",
@@ -402,64 +425,15 @@ class HistoryFrame(Tk.Toplevel):
             self.delete_btn.state(["disabled"])
             ttk.Label(table_frame, text="No data to show").pack(anchor="w")
 
-        self.grid_rowconfigure(1, weight=1)
+        self.root.grid_rowconfigure(1, weight=1)
         table_frame.update_idletasks()
 
-        if table_frame.winfo_height() < self.original_frame.root.winfo_screenheight()*0.75:
+        if table_frame.winfo_height() < self.root.winfo_screenheight()*0.75:
             canvas_height=table_frame.winfo_height()
         else:
-            canvas_height=self.original_frame.root.winfo_screenheight()*0.75
+            canvas_height=self.root.winfo_screenheight()*0.75
         self.table_canvas.config(width=table_frame.winfo_width(), height=canvas_height)
 
-    def on_return(self):
-        self.destroy()
-        self.original_frame.show_window()
-
-class EmptyDescriptionError(Exception): pass
-
-
-class MyApp:
-    """"""
-
-
-    def __init__(self, parent):
-        """Constructor"""
-        self.database = "transaction_database.db"
-        self.root = parent
-        self.root.title("Budget tracker")
-
-
-        btn = ttk.Button(self.root, text="Add new transactions",
-                        command=self.open_entry_frame)
-        btn.grid(row=0, column=0)
-
-        show_btn = ttk.Button(self.root, text="Browse History",
-                             command=self.show_transactions)
-        show_btn.grid(row=0, column=1)
-
-        root.update_idletasks() 
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
-        window_width = root.winfo_width()
-        window_height = root.winfo_height()
-            
-        x = int((screen_width / 2) - (window_width / 2))  
-        y = int((screen_height / 10) - (window_height / 10))
-        
-        self.root.geometry(f"+{x}+{y}")
-
-    def show_transactions(self):
-        self.root.withdraw()
-        HistoryFrame(self)
-
-    def open_entry_frame(self):
-        """"""
-        self.root.withdraw()
-        EntryFrame(self)
-
-    def show_window(self):
-        """"""
-        self.root.deiconify()
 
 def is_numeric(char):
     """Function to validate whether entry is numeric """
@@ -469,8 +443,10 @@ def is_numeric(char):
     except ValueError:
         return False
 
+def main():
+    root = Tk.Tk()
+    app = BudgetTracker(root)
+    root.mainloop()
 
 if __name__ == "__main__":
-    root = Tk.Tk()
-    app = MyApp(root)
-    root.mainloop()
+    main()
