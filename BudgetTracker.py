@@ -420,7 +420,11 @@ class BudgetTracker:
                           padding=(6,0)).grid(row=1+i, column=3, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[5]}", relief="groove",
                           padding=(6,0)).grid(row=1+i, column=4, sticky="nesw")
-            ttk.Label(table_frame, text=balance).grid(columnspan=5, sticky="w")
+            ttk.Label(
+                table_frame,
+                text=f"Spent: {balance['Expenses']:.2f}£\n"
+                     f"Received: {balance['Received']:.2f}£\n"
+                     f"Total balance: {balance['Total']:.2f}£").grid(columnspan=5, sticky="w")
         else:
             self.delete_btn.state(["disabled"])
             ttk.Label(table_frame, text="No data to show").pack(anchor="w")
