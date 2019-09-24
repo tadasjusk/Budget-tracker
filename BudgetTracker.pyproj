@@ -21,8 +21,8 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="backend.py" />
     <Compile Include="BudgetTracker.py" />
-    <Compile Include="gui.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="transaction_database.db" />
