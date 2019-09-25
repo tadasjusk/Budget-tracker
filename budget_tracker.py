@@ -5,92 +5,104 @@ commands is in 'backend' module. The idea of the program is to be able
 to visually interact with a database containing records of monetary transactions.
 Program allows to browse, filter, delete, enter records to the database.
 
-Module contains 2 classes - BudgetTracker and EntryFrame(Tk.Toplevel),
+Module contains 2 classes - BudgetTracker and EntryFrame(tk.Toplevel),
 and 1 exception - EmptyDescriptionError(Exception). 
 
 """
 
-import tkinter as Tk
+import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import datetime
 from tkcalendar import DateEntry
 import backend
 
-class EntryFrame(Tk.Toplevel):
-    """"""
+class EntryFrame(tk.Toplevel):
+    """Class that handles the frame to enter data.
+
+    Attributes:
+        database (string): path to the SQLite database file
+        main_window (BudgetTracker): instance of BudgetTracker class.
+            used to manage the main window of the application
+        status_message (tkinter.StringVar): holds information text to 
+            be outputted
+        entry_date (tkinter.DateEntry): DateEntry object to select date
+        entry_value (tkinter.ttk.Entry): Entry object to enter value
+        var_currency (tkinter.StringVar): holds selected currency symbol
+        entry_description (tkinter.ttk.Entry): Entry object to enter description
+        var_category (tkinter.StringVar): holds selected category
+    """
     
     def __init__(self, main_window):
-        """Constructor"""
+        """
+        Parameters:
+            main_window (BudgetTracker): instance of BudgetTracker class.
+                used to manage the main window of the application
+        """
         self.database = "transaction_database.db"
         self.main_window = main_window
-        Tk.Toplevel.__init__(self)
+        tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
 
-        self.status_message = Tk.StringVar()
+        self.status_message = tk.StringVar()
         
 
         validation = self.register(lambda char: is_numeric(char) or char in ".-")
 
-        label_date = ttk.Label(self, text="Date")
-        label_date.grid(row=0, column=0)
+        ttk.Label(self, text="Date").grid(row=0, column=0)
+
         self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
         self.entry_date.grid(row=1, column=0)
+        
+        ttk.Label(self, text="Value").grid(row=0, column=1)
 
-        label_value = ttk.Label(self, text="Value")
-        label_value.grid(row=0, column=1)
         self.entry_value = ttk.Entry(self, validate="key", validatecommand=(validation, '%S'))
 
         self.entry_value.grid(row=1, column=1)
 
-        label_currency = ttk.Label(self, text="Currency")
-        label_currency.grid(row=0, column=2)
-        self.var_currency = Tk.StringVar(self)
+        ttk.Label(self, text="Currency").grid(row=0, column=2)
+        
+        self.var_currency = tk.StringVar()
 
         currencies = {'£', '$', '€'}
-        cur_popmenu = ttk.OptionMenu(self, self.var_currency, '£', *currencies)
-        cur_popmenu.grid(row=1, column=2)
+        ttk.OptionMenu(self, self.var_currency, '£', *currencies).grid(row=1, column=2)
 
-        label_description = ttk.Label(self, text="Description")
-        label_description.grid(row=0, column=3)
+        ttk.Label(self, text="Description").grid(row=0, column=3)
+
         self.entry_description = ttk.Entry(self)
         self.entry_description.grid(row=1, column=3)
 
-
-        label_type = ttk.Label(self, text="Category")
-        label_type.grid(row=0, column=4)
-        self.var_type = Tk.StringVar(self)
-
-        types = {'Groceries', 'New items', 'Entertainment', 'Eating out',
-                 'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
-                 'Debt', 'Salary', 'Cash withdrawal'}
-        types_popmenu = ttk.OptionMenu(self, self.var_type, 'Groceries', *types)
-        types_popmenu.grid(row=1, column=4)
-
-        enterbtn = ttk.Button(self, text="Enter", command=self.on_enter)
-        enterbtn.grid(row=1, column=5)
-
-        cancelbtn = ttk.Button(self, text="Close", command=self.on_close)
-        cancelbtn.grid(row=1, column=6)
-
+        ttk.Label(self, text="Category").grid(row=0, column=4)
         
-        self.status = ttk.Label(self, textvariable=self.status_message)
+        self.var_category = tk.StringVar()
 
-        self.status.grid(row=2, columnspan=7, sticky="w")
+        categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
+                      'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
+                      'Debt', 'Salary', 'Cash withdrawal'}
+        ttk.OptionMenu(self, self.var_category, 'Groceries', *categories).grid(row=1, column=4)
+
+        ttk.Button(self, text="Enter", command=self.on_enter).grid(row=1, column=5)
+
+        ttk.Button(self, text="Close", command=self.on_close).grid(row=1, column=6)
+        
+        ttk.Label(self, textvariable=self.status_message).grid(row=2, columnspan=7, sticky="w")
 
         self.focus_force()
         self.main_window.is_entry_window_open = True
 
         self.update_idletasks()
-        x_position = int(self.main_window.root.winfo_x() + self.main_window.root.winfo_width()/2
+        x_position = int(self.main_window.root.winfo_x()
+                         + self.main_window.root.winfo_width()/2
                          - self.winfo_width()/2)
-        y_position = int(self.main_window.root.winfo_y() + self.main_window.root.winfo_height()/2
+        y_position = int(self.main_window.root.winfo_y()
+                         + self.main_window.root.winfo_height()/2
                          - self.winfo_height()/2)
         self.geometry(f"+{x_position}+{y_position}")
 
 
     def on_enter(self):
-        """"""
+        """Checks if entered data valid. If it is, enters to database"""
+
         now = datetime.datetime.now().strftime("[%H:%M:%S]")
 
         try:
@@ -98,7 +110,7 @@ class EntryFrame(Tk.Toplevel):
                      float(self.entry_value.get()),
                      self.var_currency.get(),
                      self.entry_description.get(),
-                     self.var_type.get())
+                     self.var_category.get())
 
             if not self.entry_description.get():
                 raise EmptyDescriptionError()
@@ -139,16 +151,50 @@ class EntryFrame(Tk.Toplevel):
             self.entry_description.delete(0, "end")
 
     def on_close(self):
+        """Closes the entry window"""
         self.main_window.is_entry_window_open = False
         self.destroy()
 
 
 class EmptyDescriptionError(Exception):
+    """Exception thrown to stop entries without desciptions to be inserted"""
     pass
 
 
 class BudgetTracker:
-    """"""
+    """Class that handles the main window of application.
+    
+    Attributes:
+        database (string): path to the SQLite database file
+        root (tkinter.tk): widget representing the main window of application
+        is_entry_window_open (bool): specifies whether the entry window is open
+        date_from (tkinter.DateEntry): DateEntry object to select earliest date
+        date_to (tkinter.DateEntry): DateEntry object to select latest date
+        delete_btn (tkinter.ttk.Button): Button to delete selected entries
+        status_msg (tkinter.ttk.Label): Information message about status of program
+        apply_filters_state (tkinter.IntVar): Holds state if filters are to be applied
+        var_category (tkinter.StringVar): Holds category to be shown
+        show_only_menu (tkinter.ttk.OptionMenu): Option menu to select category
+        in_value_range_state (tkinter.IntVar): holds state whether to filter entries
+            by value
+        in_value_range_cbutton (tkinter.ttk.Checkbutton): button to select whether
+            to filter entries by value
+        minimum_value_entry (tkinter.ttk.Entry): Entry to enter minimum value to be
+            returned
+        maximum_value_entry (tkinter.ttk.Entry): Entry to enter maximum value to be
+            returned
+        search_description_state (tkinter.IntVar): holds state whether to search in
+            description
+        search_description_cbutton (tkinter.ttk.Checkbutton): button to select whether
+            to search in description
+        search_description_entry (tkinter.ttk.Entry): Entry to enter what to search for
+            in description
+        table_canvas (tkinter.Canvas): widget that contains all the data returned from 
+            database
+        scroll_bar (tkinter.ttk.Scrollbar): scrollbar widget
+        data_entry_cbuttons (list): list containing checkbuttons next to data entries
+        data_entry_ids (list): list containing ids of returned data entries
+    """
     def __init__(self, parent):
         """Constructor"""
         self.database = "transaction_database.db"
@@ -171,30 +217,27 @@ class BudgetTracker:
         menu_frame = ttk.Frame(self.root)
         menu_frame.grid(row=0, column=0, columnspan=2)
 
-        label_date = ttk.Label(menu_frame, text="Date")
-        label_date.grid(row=0, column=1)
+        ttk.Label(menu_frame, text="Date").grid(row=0, column=1)
 
-        label_from = ttk.Label(menu_frame, text="From: ")
-        label_from.grid(row=1, column=0)
+        ttk.Label(menu_frame, text="From: ").grid(row=1, column=0)
 
         self.date_from = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_from.grid(row=1, column=1)
 
-        label_to = ttk.Label(menu_frame, text="To: ")
-        label_to.grid(row=2, column=0)
+        ttk.Label(menu_frame, text="To: ").grid(row=2, column=0)
 
         self.date_to = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
         self.date_to.grid(row=2, column=1)
 
-        enterbtn = ttk.Button(menu_frame, text="Show transactions",
-                              command=self.on_show_entries)
-        enterbtn.grid(row=3, column=0, columnspan=2, sticky="nesw")
+        ttk.Button(menu_frame, text="Show transactions",
+                   command=self.on_show_entries).grid(row=3, column=0, columnspan=2,
+                                                      sticky="nesw")
 
-        self.add_btn = ttk.Button(
+        add_btn = ttk.Button(
             menu_frame,
             text="Add new transactions",
             command=lambda: EntryFrame(self) if not self.is_entry_window_open else None)
-        self.add_btn.grid(row=4, column=0)
+        add_btn.grid(row=4, column=0)
 
         self.delete_btn = ttk.Button(menu_frame,
                                      text="Delete selected",
@@ -206,25 +249,25 @@ class BudgetTracker:
         self.status_msg = ttk.Label(menu_frame, foreground="red")
         self.status_msg.grid(row=5, column=0, columnspan=2, sticky="w")
 
-        self.apply_filters_state = Tk.IntVar()
+        self.apply_filters_state = tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
                                             variable=self.apply_filters_state,
                                             text="Apply filters",
                                             command=self.on_change_apply_filters_state)
         apply_filter_cbtn.grid(row=0, column=2, columnspan=2)
 
-        show_only_label = ttk.Label(menu_frame, text="Show only from category:")
-        show_only_label.grid(row=1, column=2, columnspan=3)
+        ttk.Label(menu_frame,
+                  text="Show only from category:").grid(row=1, column=2, columnspan=3)
 
         categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
                       'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
                       'Debt', 'Salary', 'Cash withdrawal', 'All'}
-        self.var_category = Tk.StringVar()
+        self.var_category = tk.StringVar()
         self.show_only_menu = ttk.OptionMenu(menu_frame, self.var_category, "All", *categories)
         self.show_only_menu.grid(row=1, column=5)
         self.show_only_menu.configure(state="disabled")
 
-        self.in_value_range_state = Tk.IntVar()
+        self.in_value_range_state = tk.IntVar()
         self.in_value_range_cbutton = ttk.Checkbutton(menu_frame,
                                            variable=self.in_value_range_state,
                                            text="In value range: ",
@@ -232,8 +275,7 @@ class BudgetTracker:
         self.in_value_range_cbutton.grid(row=2, column=2, columnspan=4)
         self.in_value_range_cbutton.configure(state="disabled")
 
-        value_range_min_label = ttk.Label(menu_frame, text="Min(£):")
-        value_range_min_label.grid(row=3, column=2)
+        ttk.Label(menu_frame, text="Min(£):").grid(row=3, column=2)
 
         validation = self.root.register(lambda char: is_numeric(char) or char in ".-")
 
@@ -247,8 +289,7 @@ class BudgetTracker:
         self.minimum_value_entry.configure(state="disabled")
 
 
-        value_range_max_label = ttk.Label(menu_frame, text="Max(£):")
-        value_range_max_label.grid(row=3, column=4)
+        ttk.Label(menu_frame, text="Max(£):").grid(row=3, column=4)
 
         self.maximum_value_entry = ttk.Entry(menu_frame,
                                              width=6,
@@ -259,7 +300,7 @@ class BudgetTracker:
         self.maximum_value_entry.insert(0, "0.0")
         self.maximum_value_entry.configure(state="disabled")
 
-        self.search_description_state = Tk.IntVar()
+        self.search_description_state = tk.IntVar()
         self.search_description_cbutton = ttk.Checkbutton(menu_frame,
                                            variable=self.search_description_state,
                                            text="Search in description: ",
@@ -392,7 +433,7 @@ class BudgetTracker:
         if self.scroll_bar:
             self.scroll_bar.destroy()
 
-        self.table_canvas = Tk.Canvas(self.root, highlightthickness=0)
+        self.table_canvas = tk.Canvas(self.root, highlightthickness=0)
         table_frame = ttk.Frame(self.table_canvas)
         self.scroll_bar = ttk.Scrollbar(self.root,
                                         orient="vertical",
@@ -463,7 +504,7 @@ def is_numeric(char):
         return False
 
 def main():
-    root = Tk.Tk()
+    root = tk.Tk()
     app = BudgetTracker(root)
     root.mainloop()
 
