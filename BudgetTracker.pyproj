@@ -4,7 +4,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0fa98c28-a8d6-4d9b-93d4-e3921ad2fee6</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>BudgetTracker.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="backend.py" />
-    <Compile Include="BudgetTracker.py" />
+    <Compile Include="budget_tracker.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="transaction_database.db" />

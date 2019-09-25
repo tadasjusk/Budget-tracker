@@ -1,24 +1,36 @@
+"""
+This module handles the interface of Budget Tracker program. Interface is
+implemented using 'tkinter' library. Part of the program that contains SQLite
+commands is in 'backend' module. The idea of the program is to be able 
+to visually interact with a database containing records of monetary transactions.
+Program allows to browse, filter, delete, enter records to the database.
+
+Module contains 2 classes - BudgetTracker and EntryFrame(Tk.Toplevel),
+and 1 exception - EmptyDescriptionError(Exception). 
+
+"""
+
 import tkinter as Tk
 from tkinter import ttk
 from tkinter import messagebox
-from tkcalendar import DateEntry
 import datetime
+from tkcalendar import DateEntry
 import backend
 
 class EntryFrame(Tk.Toplevel):
     """"""
     
-    def __init__(self, main):
+    def __init__(self, main_window):
         """Constructor"""
         self.database = "transaction_database.db"
-        self.main_window = main
+        self.main_window = main_window
         Tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
 
         self.status_message = Tk.StringVar()
         
 
-        validation = self.register(lambda char : is_numeric(char) or char in ".-")
+        validation = self.register(lambda char: is_numeric(char) or char in ".-")
 
         label_date = ttk.Label(self, text="Date")
         label_date.grid(row=0, column=0)
@@ -36,7 +48,7 @@ class EntryFrame(Tk.Toplevel):
         self.var_currency = Tk.StringVar(self)
 
         currencies = {'£', '$', '€'}
-        cur_popmenu = ttk.OptionMenu(self, self.var_currency, '£',  *currencies)
+        cur_popmenu = ttk.OptionMenu(self, self.var_currency, '£', *currencies)
         cur_popmenu.grid(row=1, column=2)
 
         label_description = ttk.Label(self, text="Description")
@@ -70,9 +82,9 @@ class EntryFrame(Tk.Toplevel):
         self.main_window.is_entry_window_open = True
 
         self.update_idletasks()
-        x_position = int(main.root.winfo_x() + main.root.winfo_width()/2
+        x_position = int(self.main_window.root.winfo_x() + self.main_window.root.winfo_width()/2
                          - self.winfo_width()/2)
-        y_position = int(main.root.winfo_y() + main.root.winfo_height()/2
+        y_position = int(self.main_window.root.winfo_y() + self.main_window.root.winfo_height()/2
                          - self.winfo_height()/2)
         self.geometry(f"+{x_position}+{y_position}")
 
@@ -83,10 +95,10 @@ class EntryFrame(Tk.Toplevel):
 
         try:
             entry = (self.entry_date.get_date(),
-                    float(self.entry_value.get()),
-                    self.var_currency.get(),
-                    self.entry_description.get(),
-                    self.var_type.get())
+                     float(self.entry_value.get()),
+                     self.var_currency.get(),
+                     self.entry_description.get(),
+                     self.var_type.get())
 
             if not self.entry_description.get():
                 raise EmptyDescriptionError()
@@ -131,7 +143,8 @@ class EntryFrame(Tk.Toplevel):
         self.destroy()
 
 
-class EmptyDescriptionError(Exception): pass
+class EmptyDescriptionError(Exception):
+    pass
 
 
 class BudgetTracker:
@@ -204,8 +217,8 @@ class BudgetTracker:
         show_only_label.grid(row=1, column=2, columnspan=3)
 
         categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
-                 'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
-                 'Debt', 'Salary', 'Cash withdrawal', 'All'}
+                      'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
+                      'Debt', 'Salary', 'Cash withdrawal', 'All'}
         self.var_category = Tk.StringVar()
         self.show_only_menu = ttk.OptionMenu(menu_frame, self.var_category, "All", *categories)
         self.show_only_menu.grid(row=1, column=5)
@@ -222,7 +235,7 @@ class BudgetTracker:
         value_range_min_label = ttk.Label(menu_frame, text="Min(£):")
         value_range_min_label.grid(row=3, column=2)
 
-        validation = self.root.register(lambda char : is_numeric(char) or char in ".-")
+        validation = self.root.register(lambda char: is_numeric(char) or char in ".-")
 
         self.minimum_value_entry = ttk.Entry(menu_frame,
                                              width=6,
@@ -381,28 +394,30 @@ class BudgetTracker:
 
         self.table_canvas = Tk.Canvas(self.root, highlightthickness=0)
         table_frame = ttk.Frame(self.table_canvas)
-        self.scroll_bar = ttk.Scrollbar(self.root, orient="vertical", command=self.table_canvas.yview)
+        self.scroll_bar = ttk.Scrollbar(self.root,
+                                        orient="vertical",
+                                        command=self.table_canvas.yview)
         self.table_canvas.configure(yscrollcommand=self.scroll_bar.set)
 
         self.table_canvas.grid(row=1, column=0, sticky="ns")
         self.scroll_bar.grid(row=1, column=1, sticky="ns")
-        self.table_canvas.create_window((0,0), window=table_frame, anchor="nw", 
-                                  tags="table_frame")
+        self.table_canvas.create_window((0, 0), window=table_frame, anchor="nw", 
+                                        tags="table_frame")
         table_frame.bind("<Configure>",
-            lambda event : self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
+            lambda event: self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
         
         if table_data:
             
             self.delete_btn.state(["!disabled"])
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=0, column=1, sticky="w")
+                      padding=(6, 0)).grid(row=0, column=1, sticky="w")
             ttk.Label(table_frame, text="Value", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=0, column=2, sticky="w")
+                      padding=(6, 0)).grid(row=0, column=2, sticky="w")
             ttk.Label(table_frame, text="Description", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=0, column=3, sticky="w")
+                      padding=(6, 0)).grid(row=0, column=3, sticky="w")
             ttk.Label(table_frame, text="Category", style="Bold.TLabel",
-                      padding=(6,0)).grid(row=0, column=4, sticky="w")
+                      padding=(6, 0)).grid(row=0, column=4, sticky="w")
 
             self.data_entry_cbuttons = []
             self.data_entry_ids = []
@@ -413,13 +428,13 @@ class BudgetTracker:
                 self.data_entry_ids.append(row[0])
 
                 ttk.Label(table_frame, text=f"{row[1]}", relief="groove",
-                          padding=(6,0)).grid(row=1+i, column=1, sticky="nesw")
+                          padding=(6, 0)).grid(row=1+i, column=1, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[2]}{row[3]}", relief="groove",
-                          padding=(6,0)).grid(row=1+i, column=2, sticky="nesw")
+                          padding=(6, 0)).grid(row=1+i, column=2, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[4]}", relief="groove",
-                          padding=(6,0)).grid(row=1+i, column=3, sticky="nesw")
+                          padding=(6, 0)).grid(row=1+i, column=3, sticky="nesw")
                 ttk.Label(table_frame, text=f"{row[5]}", relief="groove",
-                          padding=(6,0)).grid(row=1+i, column=4, sticky="nesw")
+                          padding=(6, 0)).grid(row=1+i, column=4, sticky="nesw")
             ttk.Label(
                 table_frame,
                 text=f"Spent: {balance['Expenses']:.2f}£\n"
@@ -433,9 +448,9 @@ class BudgetTracker:
         table_frame.update_idletasks()
 
         if table_frame.winfo_height() < self.root.winfo_screenheight()*0.75:
-            canvas_height=table_frame.winfo_height()
+            canvas_height = table_frame.winfo_height()
         else:
-            canvas_height=self.root.winfo_screenheight()*0.75
+            canvas_height = self.root.winfo_screenheight()*0.75
         self.table_canvas.config(width=table_frame.winfo_width(), height=canvas_height)
 
 
