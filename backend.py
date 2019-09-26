@@ -118,6 +118,38 @@ def get_balance(conn, date_from, date_to, *args):
             expenses += row[2]*multiplier
     return {"Expenses":expenses, "Received":income, "Total":total}
 
+def get_balance_by_category(conn, date_from, date_to, *args):
+    """Returns total balance for each category found
+
+    Parameters:
+    conn (Connection): Connection object
+    date_from (string): Earliest date to select entries from
+    data_to (string): Latest date to select entries from
+    *args: Variable length argument list
+        Possible argument combinations:
+        (string): Category
+        (string): Category, (string): Search
+        (float): Min_value, (float): Max_value, (string): Category
+        (float): Min_value, (float): Max_value, (string): Category, (string): Search
+    Returns:
+        dict: Balance for each category found
+    """
+    rows = select_transactions(conn, date_from, date_to, *args)
+    balance_by_category = {}
+    for row in rows:
+        if row[3] == "£":
+            multiplier = 1
+        elif row[3] == "€":
+            multiplier = 0.9
+        elif row[3] == "$":
+            multiplier = 0.8
+        try:
+            balance_by_category[f"{row[5]}"] += float(row[2])*multiplier
+        except KeyError:
+            balance_by_category[f"{row[5]}"] = float(row[2])*multiplier
+    return balance_by_category
+
+
 def delete_transactions(conn, ids):
     """Delete entries from 'transactions' table given their id's.
 

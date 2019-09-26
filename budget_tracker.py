@@ -15,6 +15,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import datetime
 from tkcalendar import DateEntry
+import matplotlib.pyplot as plt
 import backend
 
 class EntryFrame(tk.Toplevel):
@@ -189,6 +190,8 @@ class BudgetTracker:
         search_description_state (tkinter.IntVar): holds state whether to search in
             description
         data_entry_ids (list): list containing ids of returned data entries
+        balance_by_category (dict): stores total balance for each category found.
+            Used to plot bar chart.
     """
     def __init__(self, parent):
         """
@@ -243,12 +246,18 @@ class BudgetTracker:
             menu_frame,
             text="Delete selected",
             command=self.on_delete)
+
         self.widgets["delete_btn"].grid(row=4, column=1, sticky="nesw")
         self.widgets["delete_btn"].state(["disabled"])
 
+        self.widgets["plot_bar_chart_btn"] = ttk.Button(
+            menu_frame,
+            text="Plot bar chart",
+            command=self.on_plot_bar_chart)
+        self.widgets["plot_bar_chart_btn"].grid(row=5, column=0, sticky="nesw")
 
         self.widgets["status_msg"] = ttk.Label(menu_frame, foreground="red")
-        self.widgets["status_msg"].grid(row=5, column=0, columnspan=2, sticky="w")
+        self.widgets["status_msg"].grid(row=6, column=0, columnspan=2, sticky="w")
 
         self.apply_filters_state = tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
@@ -325,6 +334,7 @@ class BudgetTracker:
         self.widgets["scroll_bar"] = None
         self.widgets["data_entry_cbuttons"] = []
         self.data_entry_ids = []
+        self.balance_by_category = {}
         
 
     def on_delete(self):
@@ -382,6 +392,16 @@ class BudgetTracker:
         else:
             self.widgets["search_description_entry"].configure(state="disabled")
 
+    def on_plot_bar_chart(self):
+        self.on_show_entries()
+        if len(self.balance_by_category.keys()) > 1: #if more than 1 category found
+            plt.figure(figsize=(14, 6))
+            plt.bar(list(self.balance_by_category.keys()),
+                    self.balance_by_category.values())
+            plt.ylabel("Balance (£)")
+            plt.tight_layout()
+            plt.show()
+
     def on_show_entries(self):
         """Displays the data table according to conditions given."""
         conn = backend.create_connection(self.database)
@@ -408,6 +428,7 @@ class BudgetTracker:
                                 float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get(),
                                 self.widgets["search_description_entry"].get())
+                            self.balance_by_category = backend.get_balance_by_category
                         else:
                             table_data = backend.select_transactions(
                                 conn,
@@ -417,6 +438,13 @@ class BudgetTracker:
                                 float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get())
                             balance = backend.get_balance(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
+                                self.var_category.get())
+                            self.balance_by_category = backend.get_balance_by_category(
                                 conn,
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
@@ -437,6 +465,12 @@ class BudgetTracker:
                                 self.widgets["date_to"].get(),
                                 self.var_category.get(),
                                 self.widgets["search_description_entry"].get())
+                            self.balance_by_category = backend.get_balance_by_category(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                self.var_category.get(),
+                                self.widgets["search_description_entry"].get())
                         else:
                             table_data = backend.select_transactions(
                                 conn,
@@ -444,6 +478,11 @@ class BudgetTracker:
                                 self.widgets["date_to"].get(),
                                 self.var_category.get())
                             balance = backend.get_balance(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                self.var_category.get())
+                            self.balance_by_category = backend.get_balance_by_category(
                                 conn,
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
@@ -457,6 +496,11 @@ class BudgetTracker:
                         conn,
                         self.widgets["date_from"].get(),
                         self.widgets["date_to"].get())
+                    self.balance_by_category = backend.get_balance_by_category(
+                        conn,
+                        self.widgets["date_from"].get(),
+                        self.widgets["date_to"].get())
+
             except ValueError:
                 self.widgets["status_msg"].configure(
                     text="Error. Invalid min or max value")
