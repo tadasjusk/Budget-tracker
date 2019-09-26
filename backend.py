@@ -1,7 +1,7 @@
 """
 This module is a Python interface to perform SQLite commands to interact
-with SQLite database. It contains methods specific for 'transactions' 
-table, that is: 
+with SQLite database. It contains methods specific for 'transactions'
+table, that is:
 create_connection(db_file),
 create_table(conn, create_table_sql),
 create_transaction(conn, transaction),
@@ -13,10 +13,9 @@ delete_transactions(conn, ids)
 import sqlite3
 import sys
 
-
 def create_connection(db_file):
     """Creates a connection to the SQLite database specified by db_file.
-        
+
     Parameters:
         param db_file (string): Path to database file
     Returns:
@@ -28,8 +27,6 @@ def create_connection(db_file):
     except sqlite3.Error as e:
         print(e, file=sys.stderr)
     return None
-
-
 
 def select_transactions(conn, date_from, date_to, *args):
     """Selects all columns from 'transaction' with conditions given.
@@ -50,32 +47,32 @@ def select_transactions(conn, date_from, date_to, *args):
     """
     cur = conn.cursor()
     if len(args) == 0:
-        cur.execute('''SELECT * FROM transactions 
+        cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         ORDER BY date  ''', (date_from, date_to))
     if len(args) == 1:
-        cur.execute('''SELECT * FROM transactions 
+        cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND (type = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[0]))
     if len(args) == 2:
-        cur.execute('''SELECT * FROM transactions 
+        cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND (type = ? OR ? = 'All')
                         AND desc LIKE ?
                         ORDER BY date  ''',
-                    (date_from, date_to, args[0], args[0], '%'+args[1]+'%'))        
+                    (date_from, date_to, args[0], args[0], '%'+args[1]+'%'))
 
     if len(args) == 3:
-        cur.execute('''SELECT * FROM transactions 
+        cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
                         AND (type = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[1], args[2], args[2]))
     if len(args) == 4:
-        cur.execute('''SELECT * FROM transactions 
+        cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
                         AND (type = ? OR ? = 'All')
@@ -85,8 +82,6 @@ def select_transactions(conn, date_from, date_to, *args):
                      '%'+args[3]+'%'))
 
     return cur.fetchall()
-
-
 
 def get_balance(conn, date_from, date_to, *args):
     """Returns dictionary containing amount spent, received and total balance.
@@ -125,19 +120,18 @@ def get_balance(conn, date_from, date_to, *args):
 
 def delete_transactions(conn, ids):
     """Delete entries from 'transactions' table given their id's.
-    
+
     Parameters:
-        ids (list): List of id's of entries to be deleted 
+        ids (list): List of id's of entries to be deleted
     """
     cur = conn.cursor()
-    for id in ids:
-        cur.execute("DELETE from transactions WHERE id=? ", (id,))
+    for item in ids:
+        cur.execute("DELETE from transactions WHERE id=? ", (item,))
     conn.commit()
-
 
 def create_table(conn, create_table_sql):
     """Create a table from the create_table_sql statement.
-    Parameters: 
+    Parameters:
         conn (Connection): Connection object
         create_table_sql (String): a CREATE TABLE statement
 
@@ -151,7 +145,7 @@ def create_table(conn, create_table_sql):
 def create_transaction(conn, transaction):
     """Create a new entry into the 'transactions' table.
 
-    Parameters: 
+    Parameters:
         conn (Connection): Connection object
         transaction (Tuple): Tuple containing data to be inserted to table
     """
@@ -178,8 +172,6 @@ def main():
         # create transactions table
         with conn:
             create_table(conn, sql_create_transactions_table)
-
-
 
 if __name__ == '__main__':
     main()

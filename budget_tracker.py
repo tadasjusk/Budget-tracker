@@ -24,12 +24,10 @@ class EntryFrame(tk.Toplevel):
         database (string): path to the SQLite database file
         main_window (BudgetTracker): instance of BudgetTracker class.
             used to manage the main window of the application
+        widgets (dict): stores all the tkinter widgets that need to accessed from
+            other methods in class
         status_message (tkinter.StringVar): holds information text to 
             be outputted
-        entry_date (tkinter.DateEntry): DateEntry object to select date
-        entry_value (tkinter.ttk.Entry): Entry object to enter value
-        var_currency (tkinter.StringVar): holds selected currency symbol
-        entry_description (tkinter.ttk.Entry): Entry object to enter description
         var_category (tkinter.StringVar): holds selected category
     """
     
@@ -45,20 +43,22 @@ class EntryFrame(tk.Toplevel):
         self.title("Enter a transaction")
 
         self.status_message = tk.StringVar()
-        
+        self.widgets = {}
 
         validation = self.register(lambda char: is_numeric(char) or char in ".-")
 
         ttk.Label(self, text="Date").grid(row=0, column=0)
 
-        self.entry_date = DateEntry(self, date_pattern='yyyy/mm/dd')
-        self.entry_date.grid(row=1, column=0)
+        self.widgets["entry_date"] = DateEntry(self, date_pattern='yyyy/mm/dd')
+        self.widgets["entry_date"].grid(row=1, column=0)
         
         ttk.Label(self, text="Value").grid(row=0, column=1)
 
-        self.entry_value = ttk.Entry(self, validate="key", validatecommand=(validation, '%S'))
+        self.widgets["entry_value"] = ttk.Entry(self,
+                                                validate="key",
+                                                validatecommand=(validation, '%S'))
 
-        self.entry_value.grid(row=1, column=1)
+        self.widgets["entry_value"].grid(row=1, column=1)
 
         ttk.Label(self, text="Currency").grid(row=0, column=2)
         
@@ -69,8 +69,8 @@ class EntryFrame(tk.Toplevel):
 
         ttk.Label(self, text="Description").grid(row=0, column=3)
 
-        self.entry_description = ttk.Entry(self)
-        self.entry_description.grid(row=1, column=3)
+        self.widgets["entry_description"] = ttk.Entry(self)
+        self.widgets["entry_description"].grid(row=1, column=3)
 
         ttk.Label(self, text="Category").grid(row=0, column=4)
         
@@ -79,13 +79,18 @@ class EntryFrame(tk.Toplevel):
         categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
                       'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
                       'Debt', 'Salary', 'Cash withdrawal'}
-        ttk.OptionMenu(self, self.var_category, 'Groceries', *categories).grid(row=1, column=4)
+        ttk.OptionMenu(self,
+                       self.var_category,
+                       'Groceries',
+                       *categories).grid(row=1, column=4)
 
         ttk.Button(self, text="Enter", command=self.on_enter).grid(row=1, column=5)
 
         ttk.Button(self, text="Close", command=self.on_close).grid(row=1, column=6)
         
-        ttk.Label(self, textvariable=self.status_message).grid(row=2, columnspan=7, sticky="w")
+        ttk.Label(self, textvariable=self.status_message).grid(row=2,
+                                                               columnspan=7,
+                                                               sticky="w")
 
         self.focus_force()
         self.main_window.is_entry_window_open = True
@@ -106,31 +111,37 @@ class EntryFrame(tk.Toplevel):
         now = datetime.datetime.now().strftime("[%H:%M:%S]")
 
         try:
-            entry = (self.entry_date.get_date(),
-                     float(self.entry_value.get()),
+            entry = (self.widgets["entry_date"].get_date(),
+                     float(self.widgets["entry_value"].get()),
                      self.var_currency.get(),
-                     self.entry_description.get(),
+                     self.widgets["entry_description"].get(),
                      self.var_category.get())
 
-            if not self.entry_description.get():
+            if not self.widgets["entry_description"].get():
                 raise EmptyDescriptionError()
      
         except ValueError:
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
                     "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
-                    + f"{now} " + "Whooops, looks like you entered a wrong value. Try again!\n")
+                    + f"{now} "
+                    + "Whooops, looks like you entered a wrong value. Try again!\n")
             else:
-                self.status_message.set(self.status_message.get()
-                    + f"{now} " + "Whooops, looks like you entered a wrong value. Try again!\n")
+                self.status_message.set(
+                    self.status_message.get()
+                    + f"{now} "
+                    + "Whooops, looks like you entered a wrong value. Try again!\n")
         except EmptyDescriptionError:
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
                     "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
-                    + f"{now} " + "Failed to insert data. Please enter description\n")
+                    + f"{now} "
+                    + "Failed to insert data. Please enter description\n")
             else:
-                self.status_message.set(self.status_message.get()
-                    + f"{now} " + "Failed to insert data. Please enter description\n")
+                self.status_message.set(
+                    self.status_message.get()
+                    + f"{now} "
+                    + "Failed to insert data. Please enter description\n")
 
         else:
             conn = backend.create_connection(self.database)
@@ -145,10 +156,11 @@ class EntryFrame(tk.Toplevel):
                     "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
                     + f"{now} " + "Succesfully inserted into database\n")
             else:
-                self.status_message.set(self.status_message.get()
+                self.status_message.set(
+                    self.status_message.get()
                     + f"{now} " + "Succesfully inserted into database\n")
-            self.entry_value.delete(0, "end")
-            self.entry_description.delete(0, "end")
+            self.widgets["entry_value"].delete(0, "end")
+            self.widgets["entry_description"].delete(0, "end")
 
     def on_close(self):
         """Closes the entry window"""
@@ -168,35 +180,21 @@ class BudgetTracker:
         database (string): path to the SQLite database file
         root (tkinter.tk): widget representing the main window of application
         is_entry_window_open (bool): specifies whether the entry window is open
-        date_from (tkinter.DateEntry): DateEntry object to select earliest date
-        date_to (tkinter.DateEntry): DateEntry object to select latest date
-        delete_btn (tkinter.ttk.Button): Button to delete selected entries
-        status_msg (tkinter.ttk.Label): Information message about status of program
+        widgets (dict): stores all the tkinter widgets that need to accessed from
+            other methods in class
         apply_filters_state (tkinter.IntVar): Holds state if filters are to be applied
         var_category (tkinter.StringVar): Holds category to be shown
-        show_only_menu (tkinter.ttk.OptionMenu): Option menu to select category
         in_value_range_state (tkinter.IntVar): holds state whether to filter entries
             by value
-        in_value_range_cbutton (tkinter.ttk.Checkbutton): button to select whether
-            to filter entries by value
-        minimum_value_entry (tkinter.ttk.Entry): Entry to enter minimum value to be
-            returned
-        maximum_value_entry (tkinter.ttk.Entry): Entry to enter maximum value to be
-            returned
         search_description_state (tkinter.IntVar): holds state whether to search in
             description
-        search_description_cbutton (tkinter.ttk.Checkbutton): button to select whether
-            to search in description
-        search_description_entry (tkinter.ttk.Entry): Entry to enter what to search for
-            in description
-        table_canvas (tkinter.Canvas): widget that contains all the data returned from 
-            database
-        scroll_bar (tkinter.ttk.Scrollbar): scrollbar widget
-        data_entry_cbuttons (list): list containing checkbuttons next to data entries
         data_entry_ids (list): list containing ids of returned data entries
     """
     def __init__(self, parent):
-        """Constructor"""
+        """
+        Parameters:
+            parent (tkinter.tk): widget representing the main window of application
+        """
         self.database = "transaction_database.db"
         self.root = parent
         self.root.title("Budget tracker")
@@ -207,12 +205,14 @@ class BudgetTracker:
         window_width = self.root.winfo_width()
         window_height = self.root.winfo_height()
             
-        x = int((screen_width / 2) - (window_width / 2))  
-        y = int((screen_height / 10) - (window_height / 10))
+        x_coordinate = int((screen_width / 2) - (window_width / 2))  
+        y_coordinate = int((screen_height / 10) - (window_height / 10))
         
-        self.root.geometry(f"+{x}+{y}")
+        self.root.geometry(f"+{x_coordinate}+{y_coordinate}")
 
         self.is_entry_window_open = False
+
+        self.widgets = {}
 
         menu_frame = ttk.Frame(self.root)
         menu_frame.grid(row=0, column=0, columnspan=2)
@@ -221,13 +221,13 @@ class BudgetTracker:
 
         ttk.Label(menu_frame, text="From: ").grid(row=1, column=0)
 
-        self.date_from = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
-        self.date_from.grid(row=1, column=1)
+        self.widgets["date_from"] = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
+        self.widgets["date_from"].grid(row=1, column=1)
 
         ttk.Label(menu_frame, text="To: ").grid(row=2, column=0)
 
-        self.date_to = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
-        self.date_to.grid(row=2, column=1)
+        self.widgets["date_to"] = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
+        self.widgets["date_to"].grid(row=2, column=1)
 
         ttk.Button(menu_frame, text="Show transactions",
                    command=self.on_show_entries).grid(row=3, column=0, columnspan=2,
@@ -239,15 +239,16 @@ class BudgetTracker:
             command=lambda: EntryFrame(self) if not self.is_entry_window_open else None)
         add_btn.grid(row=4, column=0)
 
-        self.delete_btn = ttk.Button(menu_frame,
-                                     text="Delete selected",
-                                     command=self.on_delete)
-        self.delete_btn.grid(row=4, column=1, sticky="nesw")
-        self.delete_btn.state(["disabled"])
+        self.widgets["delete_btn"] = ttk.Button(
+            menu_frame,
+            text="Delete selected",
+            command=self.on_delete)
+        self.widgets["delete_btn"].grid(row=4, column=1, sticky="nesw")
+        self.widgets["delete_btn"].state(["disabled"])
 
 
-        self.status_msg = ttk.Label(menu_frame, foreground="red")
-        self.status_msg.grid(row=5, column=0, columnspan=2, sticky="w")
+        self.widgets["status_msg"] = ttk.Label(menu_frame, foreground="red")
+        self.widgets["status_msg"].grid(row=5, column=0, columnspan=2, sticky="w")
 
         self.apply_filters_state = tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
@@ -256,71 +257,80 @@ class BudgetTracker:
                                             command=self.on_change_apply_filters_state)
         apply_filter_cbtn.grid(row=0, column=2, columnspan=2)
 
-        ttk.Label(menu_frame,
-                  text="Show only from category:").grid(row=1, column=2, columnspan=3)
+        ttk.Label(
+            menu_frame,
+            text="Show only from category:").grid(row=1, column=2, columnspan=3)
 
         categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
                       'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
                       'Debt', 'Salary', 'Cash withdrawal', 'All'}
         self.var_category = tk.StringVar()
-        self.show_only_menu = ttk.OptionMenu(menu_frame, self.var_category, "All", *categories)
-        self.show_only_menu.grid(row=1, column=5)
-        self.show_only_menu.configure(state="disabled")
+        self.widgets["show_only_menu"] = ttk.OptionMenu(menu_frame,
+                                                        self.var_category,
+                                                        "All",
+                                                        *categories)
+        self.widgets["show_only_menu"].grid(row=1, column=5)
+        self.widgets["show_only_menu"].configure(state="disabled")
 
         self.in_value_range_state = tk.IntVar()
-        self.in_value_range_cbutton = ttk.Checkbutton(menu_frame,
-                                           variable=self.in_value_range_state,
-                                           text="In value range: ",
-                                           command=self.on_change_in_value_range_state)
-        self.in_value_range_cbutton.grid(row=2, column=2, columnspan=4)
-        self.in_value_range_cbutton.configure(state="disabled")
+        self.widgets["in_value_range_cbutton"] = ttk.Checkbutton(
+            menu_frame,
+            variable=self.in_value_range_state,
+            text="In value range: ",
+            command=self.on_change_in_value_range_state)
+        self.widgets["in_value_range_cbutton"].grid(row=2, column=2, columnspan=4)
+        self.widgets["in_value_range_cbutton"].configure(state="disabled")
 
         ttk.Label(menu_frame, text="Min(£):").grid(row=3, column=2)
 
         validation = self.root.register(lambda char: is_numeric(char) or char in ".-")
 
-        self.minimum_value_entry = ttk.Entry(menu_frame,
-                                             width=6,
-                                             justify="center",
-                                             validate="key",
-                                             validatecommand=(validation, '%S'))
-        self.minimum_value_entry.grid(row=3, column=3)
-        self.minimum_value_entry.insert(0, "0.0")
-        self.minimum_value_entry.configure(state="disabled")
+        self.widgets["minimum_value_entry"] = ttk.Entry(
+            menu_frame,
+            width=6,
+            justify="center",
+            validate="key",
+            validatecommand=(validation, '%S'))
+        self.widgets["minimum_value_entry"].grid(row=3, column=3)
+        self.widgets["minimum_value_entry"].insert(0, "0.0")
+        self.widgets["minimum_value_entry"].configure(state="disabled")
 
 
         ttk.Label(menu_frame, text="Max(£):").grid(row=3, column=4)
 
-        self.maximum_value_entry = ttk.Entry(menu_frame,
-                                             width=6,
-                                             justify="center",
-                                             validate="key",
-                                             validatecommand=(validation, '%S'))
-        self.maximum_value_entry.grid(row=3, column=5)
-        self.maximum_value_entry.insert(0, "0.0")
-        self.maximum_value_entry.configure(state="disabled")
+        self.widgets["maximum_value_entry"] = ttk.Entry(
+            menu_frame,
+            width=6,
+            justify="center",
+            validate="key",
+            validatecommand=(validation, '%S'))
+        self.widgets["maximum_value_entry"].grid(row=3, column=5)
+        self.widgets["maximum_value_entry"].insert(0, "0.0")
+        self.widgets["maximum_value_entry"].configure(state="disabled")
 
         self.search_description_state = tk.IntVar()
-        self.search_description_cbutton = ttk.Checkbutton(menu_frame,
-                                           variable=self.search_description_state,
-                                           text="Search in description: ",
-                                           command=self.on_change_search_description_state)
-        self.search_description_cbutton.grid(row=4, column=2, columnspan=4)
-        self.search_description_cbutton.configure(state="disabled")
+        self.widgets["search_description_cbutton"] = ttk.Checkbutton(
+            menu_frame,
+            variable=self.search_description_state,
+            text="Search in description: ",
+            command=self.on_change_search_description_state)
+        self.widgets["search_description_cbutton"].grid(row=4, column=2, columnspan=4)
+        self.widgets["search_description_cbutton"].configure(state="disabled")
 
-        self.search_description_entry = ttk.Entry(menu_frame)
-        self.search_description_entry.grid(row=5, column=2, columnspan=4)
-        self.search_description_entry.configure(state="disabled")
+        self.widgets["search_description_entry"] = ttk.Entry(menu_frame)
+        self.widgets["search_description_entry"].grid(row=5, column=2, columnspan=4)
+        self.widgets["search_description_entry"].configure(state="disabled")
 
-        self.table_canvas = None
-        self.scroll_bar = None
-        self.data_entry_cbuttons = []
+        self.widgets["table_canvas"] = None
+        self.widgets["scroll_bar"] = None
+        self.widgets["data_entry_cbuttons"] = []
         self.data_entry_ids = []
         
 
     def on_delete(self):
+        """Deletes selected entries of the table."""
         selected_rows = []
-        for cbutton in self.data_entry_cbuttons:
+        for cbutton in self.widgets["data_entry_cbuttons"]:
             if cbutton.instate(["selected"]):
                 selected_rows.append(cbutton.grid_info()["row"]-1)
         if selected_rows:
@@ -337,38 +347,43 @@ class BudgetTracker:
                 self.on_show_entries()
         
     def on_change_apply_filters_state(self):
+        """Changes state of filter widgets."""
         if self.apply_filters_state.get():
-            self.show_only_menu.configure(state="enabled")
-            self.in_value_range_cbutton.configure(state="enabled")
-            self.search_description_cbutton.configure(state="enabled")
+            self.widgets["show_only_menu"].configure(state="enabled")
+            self.widgets["in_value_range_cbutton"].configure(state="enabled")
+            self.widgets["search_description_cbutton"].configure(state="enabled")
             if self.in_value_range_state.get():
-                self.minimum_value_entry.configure(state="enabled")
-                self.maximum_value_entry.configure(state="enabled")
+                self.widgets["minimum_value_entry"].configure(state="enabled")
+                self.widgets["maximum_value_entry"].configure(state="enabled")
             if self.search_description_state.get():
-                self.search_description_entry.configure(state="enabled")
+                self.widgets["search_description_entry"].configure(state="enabled")
 
         else:
-            self.show_only_menu.configure(state="disabled")
-            self.in_value_range_cbutton.configure(state="disabled")
-            self.minimum_value_entry.configure(state="disabled")
-            self.maximum_value_entry.configure(state="disabled")
-            self.search_description_cbutton.configure(state="disabled")
-            self.search_description_entry.configure(state="disabled")
+            self.widgets["show_only_menu"].configure(state="disabled")
+            self.widgets["in_value_range_cbutton"].configure(state="disabled")
+            self.widgets["minimum_value_entry"].configure(state="disabled")
+            self.widgets["maximum_value_entry"].configure(state="disabled")
+            self.widgets["search_description_cbutton"].configure(state="disabled")
+            self.widgets["search_description_entry"].configure(state="disabled")
+
     def on_change_in_value_range_state(self):
+        """Changes state of maximum and minimum value entries."""
         if self.in_value_range_state.get():
-            self.minimum_value_entry.configure(state="enabled")
-            self.maximum_value_entry.configure(state="enabled") 
+            self.widgets["minimum_value_entry"].configure(state="enabled")
+            self.widgets["maximum_value_entry"].configure(state="enabled") 
         else:
-            self.minimum_value_entry.configure(state="disabled")
-            self.maximum_value_entry.configure(state="disabled")
+            self.widgets["minimum_value_entry"].configure(state="disabled")
+            self.widgets["maximum_value_entry"].configure(state="disabled")
 
     def on_change_search_description_state(self):
+        """Changes state of search in description entry."""
         if self.search_description_state.get():
-            self.search_description_entry.configure(state="enabled")
+            self.widgets["search_description_entry"].configure(state="enabled")
         else:
-            self.search_description_entry.configure(state="disabled")
+            self.widgets["search_description_entry"].configure(state="disabled")
 
     def on_show_entries(self):
+        """Displays the data table according to conditions given."""
         conn = backend.create_connection(self.database)
         if conn is None:
             print("Error! cannot create the database connection.")
@@ -378,78 +393,104 @@ class BudgetTracker:
                     if self.in_value_range_state.get():
                         if self.search_description_state.get():
                             table_data = backend.select_transactions(
-                                conn, self.date_from.get(), self.date_to.get(),
-                                float(self.minimum_value_entry.get()),
-                                float(self.maximum_value_entry.get()),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get(),
-                                self.search_description_entry.get())
+                                self.widgets["search_description_entry"].get())
                             balance = backend.get_balance(
-                                conn, self.date_from.get(), self.date_to.get(),
-                                float(self.minimum_value_entry.get()),
-                                float(self.maximum_value_entry.get()),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get(),
-                                self.search_description_entry.get())
+                                self.widgets["search_description_entry"].get())
                         else:
                             table_data = backend.select_transactions(
-                                conn, self.date_from.get(), self.date_to.get(),
-                                float(self.minimum_value_entry.get()),
-                                float(self.maximum_value_entry.get()),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get())
                             balance = backend.get_balance(
-                                conn, self.date_from.get(), self.date_to.get(),
-                                float(self.minimum_value_entry.get()),
-                                float(self.maximum_value_entry.get()),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get())
                     else:
                         if self.search_description_state.get():
                             table_data = backend.select_transactions(
-                                conn, self.date_from.get(), self.date_to.get(),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
                                 self.var_category.get(),
-                                self.search_description_entry.get())
+                                self.widgets["search_description_entry"].get())
                             balance = backend.get_balance(
-                                conn, self.date_from.get(), self.date_to.get(),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
                                 self.var_category.get(),
-                                self.search_description_entry.get())
+                                self.widgets["search_description_entry"].get())
                         else:
                             table_data = backend.select_transactions(
-                                conn, self.date_from.get(), self.date_to.get(),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
                                 self.var_category.get())
                             balance = backend.get_balance(
-                                conn, self.date_from.get(), self.date_to.get(),
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
                                 self.var_category.get())
                 else:
                     table_data = backend.select_transactions(
-                        conn, self.date_from.get(), self.date_to.get())
+                        conn,
+                        self.widgets["date_from"].get(),
+                        self.widgets["date_to"].get())
                     balance = backend.get_balance(
-                        conn, self.date_from.get(), self.date_to.get())
+                        conn,
+                        self.widgets["date_from"].get(),
+                        self.widgets["date_to"].get())
             except ValueError:
-                self.status_msg.configure(text="Error. Invalid min or max value")
+                self.widgets["status_msg"].configure(
+                    text="Error. Invalid min or max value")
                 return
             else:
-                self.status_msg.configure(text="")
+                self.widgets["status_msg"].configure(text="")
         
-        if self.table_canvas:
-            self.table_canvas.destroy()
-        if self.scroll_bar:
-            self.scroll_bar.destroy()
+        if self.widgets["table_canvas"]:
+            self.widgets["table_canvas"].destroy()
+        if self.widgets["scroll_bar"]:
+            self.widgets["scroll_bar"].destroy()
 
-        self.table_canvas = tk.Canvas(self.root, highlightthickness=0)
-        table_frame = ttk.Frame(self.table_canvas)
-        self.scroll_bar = ttk.Scrollbar(self.root,
-                                        orient="vertical",
-                                        command=self.table_canvas.yview)
-        self.table_canvas.configure(yscrollcommand=self.scroll_bar.set)
+        self.widgets["table_canvas"] = tk.Canvas(self.root, highlightthickness=0)
+        table_frame = ttk.Frame(self.widgets["table_canvas"])
+        self.widgets["scroll_bar"] = ttk.Scrollbar(
+            self.root,
+            orient="vertical",
+            command=self.widgets["table_canvas"].yview)
+        self.widgets["table_canvas"].configure(
+            yscrollcommand=self.widgets["scroll_bar"].set)
 
-        self.table_canvas.grid(row=1, column=0, sticky="ns")
-        self.scroll_bar.grid(row=1, column=1, sticky="ns")
-        self.table_canvas.create_window((0, 0), window=table_frame, anchor="nw", 
-                                        tags="table_frame")
-        table_frame.bind("<Configure>",
-            lambda event: self.table_canvas.configure(scrollregion=self.table_canvas.bbox("all")))
+        self.widgets["table_canvas"].grid(row=1, column=0, sticky="ns")
+        self.widgets["scroll_bar"].grid(row=1, column=1, sticky="ns")
+        self.widgets["table_canvas"].create_window((0, 0),
+                                                   window=table_frame, anchor="nw",
+                                                   tags="table_frame")
+        table_frame.bind(
+            "<Configure>",
+            lambda event: self.widgets["table_canvas"].configure(
+                scrollregion=self.widgets["table_canvas"].bbox("all")))
         
         if table_data:
             
-            self.delete_btn.state(["!disabled"])
+            self.widgets["delete_btn"].state(["!disabled"])
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
                       padding=(6, 0)).grid(row=0, column=1, sticky="w")
@@ -460,12 +501,12 @@ class BudgetTracker:
             ttk.Label(table_frame, text="Category", style="Bold.TLabel",
                       padding=(6, 0)).grid(row=0, column=4, sticky="w")
 
-            self.data_entry_cbuttons = []
+            self.widgets["data_entry_cbuttons"] = []
             self.data_entry_ids = []
             for i, row in enumerate(table_data):
-                self.data_entry_cbuttons.append(ttk.Checkbutton(table_frame))
-                self.data_entry_cbuttons[-1].grid(row=1+i, column=0)
-                self.data_entry_cbuttons[-1].state(["!alternate"])
+                self.widgets["data_entry_cbuttons"].append(ttk.Checkbutton(table_frame))
+                self.widgets["data_entry_cbuttons"][-1].grid(row=1+i, column=0)
+                self.widgets["data_entry_cbuttons"][-1].state(["!alternate"])
                 self.data_entry_ids.append(row[0])
 
                 ttk.Label(table_frame, text=f"{row[1]}", relief="groove",
@@ -480,9 +521,10 @@ class BudgetTracker:
                 table_frame,
                 text=f"Spent: {balance['Expenses']:.2f}£\n"
                      f"Received: {balance['Received']:.2f}£\n"
-                     f"Total balance: {balance['Total']:.2f}£").grid(columnspan=5, sticky="w")
+                     f"Total balance: {balance['Total']:.2f}£").grid(columnspan=5,
+                                                                     sticky="w")
         else:
-            self.delete_btn.state(["disabled"])
+            self.widgets["delete_btn"].state(["disabled"])
             ttk.Label(table_frame, text="No data to show").pack(anchor="w")
 
         self.root.grid_rowconfigure(1, weight=1)
@@ -492,7 +534,8 @@ class BudgetTracker:
             canvas_height = table_frame.winfo_height()
         else:
             canvas_height = self.root.winfo_screenheight()*0.75
-        self.table_canvas.config(width=table_frame.winfo_width(), height=canvas_height)
+        self.widgets["table_canvas"].config(width=table_frame.winfo_width(),
+                                            height=canvas_height)
 
 
 def is_numeric(char):
