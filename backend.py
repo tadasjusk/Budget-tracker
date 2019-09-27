@@ -7,6 +7,7 @@ create_table(conn, create_table_sql),
 create_transaction(conn, transaction),
 select_transactions(conn, date_from, date_to, *args),
 get_balance(conn, date_from, date_to, *args),
+get_expenses_by_category(conn, date_from, date_to, *args),
 delete_transactions(conn, ids)
 """
 
@@ -118,8 +119,8 @@ def get_balance(conn, date_from, date_to, *args):
             expenses += row[2]*multiplier
     return {"Expenses":expenses, "Received":income, "Total":total}
 
-def get_balance_by_category(conn, date_from, date_to, *args):
-    """Returns total balance for each category found
+def get_expenses_by_category(conn, date_from, date_to, *args):
+    """Returns total expenses for each category found
 
     Parameters:
     conn (Connection): Connection object
@@ -135,7 +136,7 @@ def get_balance_by_category(conn, date_from, date_to, *args):
         dict: Balance for each category found
     """
     rows = select_transactions(conn, date_from, date_to, *args)
-    balance_by_category = {}
+    expenses_by_category = {}
     for row in rows:
         if row[3] == "£":
             multiplier = 1
@@ -144,10 +145,12 @@ def get_balance_by_category(conn, date_from, date_to, *args):
         elif row[3] == "$":
             multiplier = 0.8
         try:
-            balance_by_category[f"{row[5]}"] += float(row[2])*multiplier
+            if row[5] != "Salary":
+                expenses_by_category[f"{row[5]}"] += float(row[2])*multiplier
         except KeyError:
-            balance_by_category[f"{row[5]}"] = float(row[2])*multiplier
-    return balance_by_category
+            if row[5] != "Salary":
+                expenses_by_category[f"{row[5]}"] = float(row[2])*multiplier
+    return expenses_by_category
 
 
 def delete_transactions(conn, ids):

@@ -190,7 +190,7 @@ class BudgetTracker:
         search_description_state (tkinter.IntVar): holds state whether to search in
             description
         data_entry_ids (list): list containing ids of returned data entries
-        balance_by_category (dict): stores total balance for each category found.
+        expenses_by_category (dict): stores total balance for each category found.
             Used to plot bar chart.
     """
     def __init__(self, parent):
@@ -334,7 +334,7 @@ class BudgetTracker:
         self.widgets["scroll_bar"] = None
         self.widgets["data_entry_cbuttons"] = []
         self.data_entry_ids = []
-        self.balance_by_category = {}
+        self.expenses_by_category = {}
         
 
     def on_delete(self):
@@ -394,11 +394,16 @@ class BudgetTracker:
 
     def on_plot_bar_chart(self):
         self.on_show_entries()
-        if len(self.balance_by_category.keys()) > 1: #if more than 1 category found
+        if len(self.expenses_by_category.keys()) > 1: #if more than 1 category found
             plt.figure(figsize=(14, 6))
-            plt.bar(list(self.balance_by_category.keys()),
-                    self.balance_by_category.values())
+            plt.bar(list(self.expenses_by_category.keys()),
+                    self.expenses_by_category.values(),
+                    color=(135/255, 227/255, 125/255))
             plt.ylabel("Balance (£)")
+            plt.title(f"{self.widgets['date_from'].get()} to {self.widgets['date_to'].get()}")
+            for i, v in enumerate(self.expenses_by_category.values()):
+                plt.text(i-0.25, v, str(round(v,2)), fontweight="bold")
+
             plt.tight_layout()
             plt.show()
 
@@ -428,7 +433,7 @@ class BudgetTracker:
                                 float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get(),
                                 self.widgets["search_description_entry"].get())
-                            self.balance_by_category = backend.get_balance_by_category
+                            self.expenses_by_category = backend.get_expenses_by_category
                         else:
                             table_data = backend.select_transactions(
                                 conn,
@@ -444,7 +449,7 @@ class BudgetTracker:
                                 float(self.widgets["minimum_value_entry"].get()),
                                 float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get())
-                            self.balance_by_category = backend.get_balance_by_category(
+                            self.expenses_by_category = backend.get_expenses_by_category(
                                 conn,
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
@@ -465,7 +470,7 @@ class BudgetTracker:
                                 self.widgets["date_to"].get(),
                                 self.var_category.get(),
                                 self.widgets["search_description_entry"].get())
-                            self.balance_by_category = backend.get_balance_by_category(
+                            self.expenses_by_category = backend.get_expenses_by_category(
                                 conn,
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
@@ -482,7 +487,7 @@ class BudgetTracker:
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
                                 self.var_category.get())
-                            self.balance_by_category = backend.get_balance_by_category(
+                            self.expenses_by_category = backend.get_expenses_by_category(
                                 conn,
                                 self.widgets["date_from"].get(),
                                 self.widgets["date_to"].get(),
@@ -496,7 +501,7 @@ class BudgetTracker:
                         conn,
                         self.widgets["date_from"].get(),
                         self.widgets["date_to"].get())
-                    self.balance_by_category = backend.get_balance_by_category(
+                    self.expenses_by_category = backend.get_expenses_by_category(
                         conn,
                         self.widgets["date_from"].get(),
                         self.widgets["date_to"].get())
