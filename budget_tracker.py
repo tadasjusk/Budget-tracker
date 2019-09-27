@@ -250,11 +250,12 @@ class BudgetTracker:
         self.widgets["delete_btn"].grid(row=4, column=1, sticky="nesw")
         self.widgets["delete_btn"].state(["disabled"])
 
-        self.widgets["plot_bar_chart_btn"] = ttk.Button(
+        plot_bar_chart_btn = ttk.Button(
             menu_frame,
             text="Plot bar chart",
             command=self.on_plot_bar_chart)
-        self.widgets["plot_bar_chart_btn"].grid(row=5, column=0, sticky="nesw")
+        plot_bar_chart_btn.grid(row=5, column=0, sticky="nesw")
+
 
         self.widgets["status_msg"] = ttk.Label(menu_frame, foreground="red")
         self.widgets["status_msg"].grid(row=6, column=0, columnspan=2, sticky="w")
@@ -394,18 +395,48 @@ class BudgetTracker:
 
     def on_plot_bar_chart(self):
         self.on_show_entries()
+        salary = self.expenses_by_category.pop("Salary", 0)
         if len(self.expenses_by_category.keys()) > 1: #if more than 1 category found
-            plt.figure(figsize=(14, 6))
-            plt.bar(list(self.expenses_by_category.keys()),
+            fig1 = plt.figure(figsize=(14, 6))
+            axes1 = fig1.gca()
+            axes1.bar(list(self.expenses_by_category.keys()),
                     self.expenses_by_category.values(),
-                    color=(135/255, 227/255, 125/255))
-            plt.ylabel("Balance (£)")
-            plt.title(f"{self.widgets['date_from'].get()} to {self.widgets['date_to'].get()}")
+                    color="#87e37d")
+            axes1.set_ylabel("Balance (£)")
+            axes1.set_title(f"{self.widgets['date_from'].get()} to {self.widgets['date_to'].get()}")
             for i, v in enumerate(self.expenses_by_category.values()):
-                plt.text(i-0.25, v, str(round(v,2)), fontweight="bold")
-
+                axes1.text(i-0.25, v, str(round(v,2)), fontweight="bold")
             plt.tight_layout()
-            plt.show()
+            fig2 = plt.figure()
+            axes2 = fig2.gca()
+            color_list = ['silver', 'lightcoral', 'red', 'peru', 'orange', 'gold',
+                         'yellowgreen', 'lime', 'turquoise', 'deepskyblue', 'blue', 'indogo']
+            data = {}
+            data["Earnings"] = salary
+            data["Expenses"] = 0
+            axes2.bar(data.keys(), [salary, 0], label="Earnings")
+            for idx, item in enumerate(self.expenses_by_category.values()):
+
+                if item < 0:
+                    axes2.bar(
+                        data.keys(), [0, -item], bottom=data["Expenses"],
+                        color=color_list[idx%len(color_list)],
+                        label =f"{list(self.expenses_by_category.keys())[idx]}" )
+                    data["Expenses"]+=-item
+                else:
+                    axes2.bar(
+                        data.keys(), [item, 0], bottom=data["Earnings"],
+                        color=color_list[idx%len(color_list)],
+                        label =f"{list(self.expenses_by_category.keys())[idx]}")
+                    data["Earnings"]+=item
+
+            for i, v in enumerate(data.values()):
+                axes2.text(i-.1, v, str(round(v,2)), fontweight="bold")
+
+            axes2.legend(loc="best", prop={'size': 6})
+            axes2.set_ylabel("Amount (£)")
+        
+        plt.show()
 
     def on_show_entries(self):
         """Displays the data table according to conditions given."""

@@ -145,11 +145,9 @@ def get_expenses_by_category(conn, date_from, date_to, *args):
         elif row[3] == "$":
             multiplier = 0.8
         try:
-            if row[5] != "Salary":
-                expenses_by_category[f"{row[5]}"] += float(row[2])*multiplier
+            expenses_by_category[f"{row[5]}"] += float(row[2])*multiplier
         except KeyError:
-            if row[5] != "Salary":
-                expenses_by_category[f"{row[5]}"] = float(row[2])*multiplier
+            expenses_by_category[f"{row[5]}"] = float(row[2])*multiplier
     return expenses_by_category
 
 
