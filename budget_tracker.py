@@ -42,7 +42,7 @@ class EntryFrame(tk.Toplevel):
         self.main_window = main_window
         tk.Toplevel.__init__(self)
         self.title("Enter a transaction")
-
+        self.configure(background="white")
         self.status_message = tk.StringVar()
         self.widgets = {}
 
@@ -104,6 +104,7 @@ class EntryFrame(tk.Toplevel):
                          + self.main_window.root.winfo_height()/2
                          - self.winfo_height()/2)
         self.geometry(f"+{x_position}+{y_position}")
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
 
     def on_enter(self):
@@ -201,6 +202,7 @@ class BudgetTracker:
         self.database = "transaction_database.db"
         self.root = parent
         self.root.title("Budget tracker")
+        self.root.configure(background="white")
 
         self.root.update_idletasks() 
         screen_width = self.root.winfo_screenwidth()
@@ -216,6 +218,12 @@ class BudgetTracker:
         self.is_entry_window_open = False
 
         self.widgets = {}
+
+        gui_style = ttk.Style()
+        gui_style.configure('TFrame', background='white')
+        gui_style.configure('TLabel', background='white')
+        gui_style.configure('TCheckbutton', background='white')
+        gui_style.configure('TMenubutton', background='white')
 
         menu_frame = ttk.Frame(self.root)
         menu_frame.grid(row=0, column=0, columnspan=2)
@@ -252,8 +260,8 @@ class BudgetTracker:
 
         plot_bar_chart_btn = ttk.Button(
             menu_frame,
-            text="Plot bar chart",
-            command=self.on_plot_bar_chart)
+            text="Plot bar charts",
+            command=self.on_plot_bar_charts)
         plot_bar_chart_btn.grid(row=5, column=0, sticky="nesw")
 
 
@@ -393,20 +401,72 @@ class BudgetTracker:
         else:
             self.widgets["search_description_entry"].configure(state="disabled")
 
-    def on_plot_bar_chart(self):
-        self.on_show_entries()
+    def on_plot_bar_charts(self):
+        """Plot bar charts to visualize retrieved data """
+        conn = backend.create_connection(self.database)
+        if conn is None:
+            self.widgets["status_msg"].configure(
+                text="Error. Cannot create database connection")
+        with conn:
+            try:
+                if self.apply_filters_state.get():
+                    if self.in_value_range_state.get():
+                        if self.search_description_state.get():
+                            self.expenses_by_category = backend.get_expenses_by_category()
+                        else:
+                            self.expenses_by_category = backend.get_expenses_by_category(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                float(self.widgets["minimum_value_entry"].get()),
+                                float(self.widgets["maximum_value_entry"].get()),
+                                self.var_category.get())
+                    else:
+                        if self.search_description_state.get():
+                            self.expenses_by_category = backend.get_expenses_by_category(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                self.var_category.get(),
+                                self.widgets["search_description_entry"].get())
+                        else:
+                            self.expenses_by_category = backend.get_expenses_by_category(
+                                conn,
+                                self.widgets["date_from"].get(),
+                                self.widgets["date_to"].get(),
+                                self.var_category.get())
+                else:
+                    self.expenses_by_category = backend.get_expenses_by_category(
+                        conn,
+                        self.widgets["date_from"].get(),
+                        self.widgets["date_to"].get())
+
+            except ValueError:
+                self.widgets["status_msg"].configure(
+                    text="Error. Invalid min or max value")
+                return
+            else:
+                self.widgets["status_msg"].configure(text="")
+        if not self.expenses_by_category:
+            self.widgets["status_msg"].configure(
+                text="No data to show")
+            return
+        else:
+            self.widgets["status_msg"].configure(text="")
+
         salary = self.expenses_by_category.pop("Salary", 0)
-        if len(self.expenses_by_category.keys()) > 1: #if more than 1 category found
+        if len(self.expenses_by_category.keys()) > 1: # Need at least 2 categories to compare
             fig1 = plt.figure(figsize=(14, 6))
             axes1 = fig1.gca()
             axes1.bar(list(self.expenses_by_category.keys()),
                     self.expenses_by_category.values(),
                     color="#87e37d")
             axes1.set_ylabel("Balance (£)")
-            axes1.set_title(f"{self.widgets['date_from'].get()} to {self.widgets['date_to'].get()}")
+            axes1.set_title(f"Expenses from {self.widgets['date_from'].get()} to {self.widgets['date_to'].get()}")
             for i, v in enumerate(self.expenses_by_category.values()):
                 axes1.text(i-0.25, v, str(round(v,2)), fontweight="bold")
             plt.tight_layout()
+            axes1.grid()
             fig2 = plt.figure()
             axes2 = fig2.gca()
             color_list = ['silver', 'lightcoral', 'red', 'peru', 'orange', 'gold',
@@ -416,12 +476,11 @@ class BudgetTracker:
             data["Expenses"] = 0
             axes2.bar(data.keys(), [salary, 0], label="Earnings")
             for idx, item in enumerate(self.expenses_by_category.values()):
-
                 if item < 0:
                     axes2.bar(
                         data.keys(), [0, -item], bottom=data["Expenses"],
                         color=color_list[idx%len(color_list)],
-                        label =f"{list(self.expenses_by_category.keys())[idx]}" )
+                        label =f"{list(self.expenses_by_category.keys())[idx]}")
                     data["Expenses"]+=-item
                 else:
                     axes2.bar(
@@ -433,16 +492,18 @@ class BudgetTracker:
             for i, v in enumerate(data.values()):
                 axes2.text(i-.1, v, str(round(v,2)), fontweight="bold")
 
-            axes2.legend(loc="best", prop={'size': 6})
+            axes2.legend(loc="best", prop={'size': 6}).set_draggable(True)
             axes2.set_ylabel("Amount (£)")
+            axes2.grid()
         
-        plt.show()
+            plt.show()
 
     def on_show_entries(self):
         """Displays the data table according to conditions given."""
         conn = backend.create_connection(self.database)
         if conn is None:
-            print("Error! cannot create the database connection.")
+            self.widgets["status_msg"].configure(
+                text="Error. Cannot create database connection")
         with conn:
             try:
                 if self.apply_filters_state.get():
@@ -464,7 +525,7 @@ class BudgetTracker:
                                 float(self.widgets["maximum_value_entry"].get()),
                                 self.var_category.get(),
                                 self.widgets["search_description_entry"].get())
-                            self.expenses_by_category = backend.get_expenses_by_category
+                            self.expenses_by_category = backend.get_expenses_by_category()
                         else:
                             table_data = backend.select_transactions(
                                 conn,
@@ -548,28 +609,29 @@ class BudgetTracker:
             self.widgets["table_canvas"].destroy()
         if self.widgets["scroll_bar"]:
             self.widgets["scroll_bar"].destroy()
-
-        self.widgets["table_canvas"] = tk.Canvas(self.root, highlightthickness=0)
-        table_frame = ttk.Frame(self.widgets["table_canvas"])
-        self.widgets["scroll_bar"] = ttk.Scrollbar(
-            self.root,
-            orient="vertical",
-            command=self.widgets["table_canvas"].yview)
-        self.widgets["table_canvas"].configure(
-            yscrollcommand=self.widgets["scroll_bar"].set)
-
-        self.widgets["table_canvas"].grid(row=1, column=0, sticky="ns")
-        self.widgets["scroll_bar"].grid(row=1, column=1, sticky="ns")
-        self.widgets["table_canvas"].create_window((0, 0),
-                                                   window=table_frame, anchor="nw",
-                                                   tags="table_frame")
-        table_frame.bind(
-            "<Configure>",
-            lambda event: self.widgets["table_canvas"].configure(
-                scrollregion=self.widgets["table_canvas"].bbox("all")))
         
         if table_data:
-            
+            self.widgets["table_canvas"] = tk.Canvas(self.root,
+                                                     highlightthickness=0,
+                                                     background="White")
+            table_frame = ttk.Frame(self.widgets["table_canvas"])
+            self.widgets["scroll_bar"] = ttk.Scrollbar(
+                self.root,
+                orient="vertical",
+                command=self.widgets["table_canvas"].yview)
+            self.widgets["table_canvas"].configure(
+                yscrollcommand=self.widgets["scroll_bar"].set)
+
+            self.widgets["table_canvas"].grid(row=1, column=0, sticky="ns")
+            self.widgets["scroll_bar"].grid(row=1, column=1, sticky="ns")
+            self.widgets["table_canvas"].create_window((0, 0),
+                                                       window=table_frame, anchor="nw",
+                                                       tags="table_frame")
+            table_frame.bind(
+                "<Configure>",
+                lambda event: self.widgets["table_canvas"].configure(
+                    scrollregion=self.widgets["table_canvas"].bbox("all")))    
+            self.widgets["status_msg"].configure(text="")
             self.widgets["delete_btn"].state(["!disabled"])
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
@@ -603,19 +665,21 @@ class BudgetTracker:
                      f"Received: {balance['Received']:.2f}£\n"
                      f"Total balance: {balance['Total']:.2f}£").grid(columnspan=5,
                                                                      sticky="w")
+
+            self.root.grid_rowconfigure(1, weight=1)
+            table_frame.update_idletasks()
+
+            if table_frame.winfo_height() < self.root.winfo_screenheight()*0.75:
+                canvas_height = table_frame.winfo_height()
+            else:
+                canvas_height = self.root.winfo_screenheight()*0.75
+            self.widgets["table_canvas"].config(width=table_frame.winfo_width(),
+                                                height=canvas_height)
         else:
             self.widgets["delete_btn"].state(["disabled"])
-            ttk.Label(table_frame, text="No data to show").pack(anchor="w")
-
-        self.root.grid_rowconfigure(1, weight=1)
-        table_frame.update_idletasks()
-
-        if table_frame.winfo_height() < self.root.winfo_screenheight()*0.75:
-            canvas_height = table_frame.winfo_height()
-        else:
-            canvas_height = self.root.winfo_screenheight()*0.75
-        self.widgets["table_canvas"].config(width=table_frame.winfo_width(),
-                                            height=canvas_height)
+            self.widgets["status_msg"].configure(
+                text="No data to show")
+            return
 
 
 def is_numeric(char):
