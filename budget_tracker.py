@@ -16,6 +16,7 @@ from tkinter import messagebox
 import datetime
 from tkcalendar import DateEntry
 import matplotlib.pyplot as plt
+import sqlite3
 import backend
 
 class EntryFrame(tk.Toplevel):
@@ -151,7 +152,15 @@ class EntryFrame(tk.Toplevel):
             if conn is None:
                 self.status_message.set("Error! cannot create the database connection.")
             with conn:
-                backend.create_transaction(conn, entry)
+                try:
+                    backend.create_transaction(conn, entry)
+                except sqlite3.OperationalError as e:
+                    if str(e) == "no such table: transactions":
+                        backend.create_transactions_table(conn)
+                        backend.create_transaction(conn, entry)
+                        self.status_message.set("Created a new 'transactions' table\n")
+                    else:
+                        raise
 
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
@@ -266,7 +275,7 @@ class BudgetTracker:
 
 
         self.widgets["status_msg"] = ttk.Label(menu_frame, foreground="red")
-        self.widgets["status_msg"].grid(row=6, column=0, columnspan=2, sticky="w")
+        self.widgets["status_msg"].grid(row=6, column=0, columnspan=4, sticky="w")
 
         self.apply_filters_state = tk.IntVar()
         apply_filter_cbtn = ttk.Checkbutton(menu_frame,
@@ -445,6 +454,11 @@ class BudgetTracker:
                 self.widgets["status_msg"].configure(
                     text="Error. Invalid min or max value")
                 return
+            except sqlite3.OperationalError as e :
+                if str(e) == "no such table: transactions":
+                    self.widgets["status_msg"].configure(
+                        text="Database error. Could not find table 'transactions'.")
+                    return
             else:
                 self.widgets["status_msg"].configure(text="")
         if not self.expenses_by_category:
@@ -497,6 +511,9 @@ class BudgetTracker:
             axes2.grid()
         
             plt.show()
+        else:
+            self.widgets["status_msg"].configure(
+                text="Need data from at least 2 categories")
 
     def on_show_entries(self):
         """Displays the data table according to conditions given."""
@@ -602,6 +619,13 @@ class BudgetTracker:
                 self.widgets["status_msg"].configure(
                     text="Error. Invalid min or max value")
                 return
+            except sqlite3.OperationalError as e :
+                if str(e) == "no such table: transactions":
+                    self.widgets["status_msg"].configure(
+                        text="Database error. Could not find table 'transactions'.")
+                    return
+                else:
+                    raise
             else:
                 self.widgets["status_msg"].configure(text="")
         

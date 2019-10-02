@@ -162,16 +162,24 @@ def delete_transactions(conn, ids):
         cur.execute("DELETE from transactions WHERE id=? ", (item,))
     conn.commit()
 
-def create_table(conn, create_table_sql):
+def create_transactions_table(conn):
     """Create a table from the create_table_sql statement.
     Parameters:
         conn (Connection): Connection object
         create_table_sql (String): a CREATE TABLE statement
 
     """
+    sql_create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
+                                        id integer PRIMARY KEY,
+                                        date text,
+                                        value float,
+                                        currency text,
+                                        desc text,
+                                        type text
+                                    ); """
     try:
         c = conn.cursor()
-        c.execute(create_table_sql)
+        c.execute(sql_create_transactions_table)
     except sqlite3.Error as e:
         print(e, file=sys.stderr)
 
