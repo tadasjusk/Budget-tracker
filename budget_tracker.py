@@ -42,6 +42,8 @@ class EntryFrame(tk.Toplevel):
         self.database = "transaction_database.db"
         self.main_window = main_window
         tk.Toplevel.__init__(self)
+        # hide window in background during drawing
+        self.withdraw()
         self.title("Enter a transaction")
         self.configure(background="white")
         self.status_message = tk.StringVar()
@@ -98,6 +100,7 @@ class EntryFrame(tk.Toplevel):
         self.main_window.is_entry_window_open = True
 
         self.update_idletasks()
+        self.deiconify()
         x_position = int(self.main_window.root.winfo_x()
                          + self.main_window.root.winfo_width()/2
                          - self.winfo_width()/2)
@@ -106,7 +109,7 @@ class EntryFrame(tk.Toplevel):
                          - self.winfo_height()/2)
         self.geometry(f"+{x_position}+{y_position}")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-
+        
 
     def on_enter(self):
         """Checks if entered data valid. If it is, enters to database"""
@@ -212,7 +215,8 @@ class BudgetTracker:
         self.root = parent
         self.root.title("Budget tracker")
         self.root.configure(background="white")
-
+        # hide window in background during drawing
+        self.root.withdraw()
         self.root.update_idletasks() 
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
@@ -353,6 +357,8 @@ class BudgetTracker:
         self.widgets["data_entry_cbuttons"] = []
         self.data_entry_ids = []
         self.expenses_by_category = {}
+
+        self.root.deiconify()
         
 
     def on_delete(self):
