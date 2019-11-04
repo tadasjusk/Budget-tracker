@@ -54,13 +54,13 @@ def select_transactions(conn, date_from, date_to, *args):
     if len(args) == 1:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[0]))
     if len(args) == 2:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         AND desc LIKE ?
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[0], '%'+args[1]+'%'))
@@ -69,14 +69,14 @@ def select_transactions(conn, date_from, date_to, *args):
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[1], args[2], args[2]))
     if len(args) == 4:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         AND desc LIKE ?
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[1], args[2], args[2],
@@ -175,7 +175,7 @@ def create_transactions_table(conn):
                                         value float,
                                         currency text,
                                         desc text,
-                                        type text
+                                        categ text
                                     ); """
     try:
         c = conn.cursor()
@@ -190,7 +190,7 @@ def create_transaction(conn, transaction):
         conn (Connection): Connection object
         transaction (Tuple): Tuple containing data to be inserted to table
     """
-    sql = ''' INSERT INTO transactions(date, value, currency, desc, type)
+    sql = ''' INSERT INTO transactions(date, value, currency, desc, categ)
               VALUES(?, ?, ?, ?, ?) '''
     cur = conn.cursor()
     cur.execute(sql, transaction)
@@ -203,7 +203,7 @@ def main():
                                         value float,
                                         currency text,
                                         desc text,
-                                        type text
+                                        categ text
                                     ); """
 
     # create a database connection

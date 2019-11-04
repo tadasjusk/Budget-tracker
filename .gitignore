@@ -1,2 +1,6 @@
 *.pyc
 .vs/BudgetTracker/v15/.suo
+budget_tracker.spec
+.vs/
+build/
+dist/

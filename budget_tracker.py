@@ -80,9 +80,9 @@ class EntryFrame(tk.Toplevel):
         
         self.var_category = tk.StringVar()
 
-        categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
-                      'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
-                      'Debt', 'Salary', 'Cash withdrawal'}
+        categories = {'Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
+                      'Subscriptions', 'Rent', 'Sports', 'Transport',
+                      'Debt', 'Salary', 'Cash withdrawal', 'Other'}
         ttk.OptionMenu(self,
                        self.var_category,
                        'Groceries',
@@ -245,12 +245,12 @@ class BudgetTracker:
 
         ttk.Label(menu_frame, text="From: ").grid(row=1, column=0)
 
-        self.widgets["date_from"] = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
+        self.widgets["date_from"] = DateEntry(menu_frame, date_pattern='y-mm-dd')
         self.widgets["date_from"].grid(row=1, column=1)
 
         ttk.Label(menu_frame, text="To: ").grid(row=2, column=0)
 
-        self.widgets["date_to"] = DateEntry(menu_frame, date_pattern='yyyy-mm-dd')
+        self.widgets["date_to"] = DateEntry(menu_frame, date_pattern='y-mm-dd')
         self.widgets["date_to"].grid(row=2, column=1)
 
         ttk.Button(menu_frame, text="Show transactions",
