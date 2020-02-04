@@ -292,9 +292,9 @@ class BudgetTracker:
             menu_frame,
             text="Show only from category:").grid(row=1, column=2, columnspan=3)
 
-        categories = {'Groceries', 'New items', 'Entertainment', 'Eating out',
-                      'Drinks', 'Subscriptions', 'Rent', 'Leisure', 'Transport',
-                      'Debt', 'Salary', 'Cash withdrawal', 'All'}
+        categories = {'Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
+                      'Subscriptions', 'Rent', 'Sports', 'Transport',
+                      'Debt', 'Salary', 'Cash withdrawal', 'Other', 'All'}
         self.var_category = tk.StringVar()
         self.widgets["show_only_menu"] = ttk.OptionMenu(menu_frame,
                                                         self.var_category,
