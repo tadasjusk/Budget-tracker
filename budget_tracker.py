@@ -640,7 +640,7 @@ class BudgetTracker:
         if self.widgets["scroll_bar"]:
             self.widgets["scroll_bar"].destroy()
         
-        if table_data:
+        if table_data: #is there's data, build a table to show it
             self.widgets["table_canvas"] = tk.Canvas(self.root,
                                                      highlightthickness=0,
                                                      background="White")
@@ -660,7 +660,8 @@ class BudgetTracker:
             table_frame.bind(
                 "<Configure>",
                 lambda event: self.widgets["table_canvas"].configure(
-                    scrollregion=self.widgets["table_canvas"].bbox("all")))    
+                    scrollregion=self.widgets["table_canvas"].bbox("all")))
+            self.widgets["table_canvas"].bind_all("<MouseWheel>", self.on_mousewheel)
             self.widgets["status_msg"].configure(text="")
             self.widgets["delete_btn"].state(["!disabled"])
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
@@ -698,11 +699,11 @@ class BudgetTracker:
 
             self.root.grid_rowconfigure(1, weight=1)
             table_frame.update_idletasks()
-
-            if table_frame.winfo_height() < self.root.winfo_screenheight()*0.75:
+            #caps table contents to 60% of height of window, table becomes scrollable 
+            if table_frame.winfo_height() < self.root.winfo_screenheight()*0.6:
                 canvas_height = table_frame.winfo_height()
             else:
-                canvas_height = self.root.winfo_screenheight()*0.75
+                canvas_height = self.root.winfo_screenheight()*0.6
             self.widgets["table_canvas"].config(width=table_frame.winfo_width(),
                                                 height=canvas_height)
         else:
@@ -711,6 +712,9 @@ class BudgetTracker:
                 text="No data to show")
             return
 
+    def on_mousewheel(self, event):
+        """Function that handles scrolling when mousewheel is moved """
+        self.widgets["table_canvas"].yview_scroll(int(-1*(event.delta/120)), "units")
 
 def is_numeric(char):
     """Function to validate whether entry is numeric """
