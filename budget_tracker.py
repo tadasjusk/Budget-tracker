@@ -68,7 +68,7 @@ class EntryFrame(tk.Toplevel):
         
         self.var_currency = tk.StringVar()
 
-        currencies = {'£', '$', '€'}
+        currencies = ['£', '$', '€']
         ttk.OptionMenu(self, self.var_currency, '£', *currencies).grid(row=1, column=2)
 
         ttk.Label(self, text="Description").grid(row=0, column=3)
@@ -287,9 +287,9 @@ class BudgetTracker:
             text="Category:", state="disabled")
         self.widgets["category_label"].grid(row=1, column=2, columnspan=2)
 
-        categories = {'Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
+        categories = ['Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
                       'Subscriptions', 'Rent', 'Sports', 'Transport',
-                      'Debt', 'Salary', 'Cash withdrawal', 'Other', 'All'}
+                      'Debt', 'Salary', 'Cash withdrawal', 'Other', 'All']
         self.var_category = tk.StringVar()
         self.widgets["category_menu"] = ttk.OptionMenu(menu_frame,
                                                         self.var_category,
@@ -659,7 +659,7 @@ class BudgetTracker:
         if self.widgets["scroll_bar"]:
             self.widgets["scroll_bar"].destroy()
         
-        if table_data: #is there's data, build a table to show it
+        if table_data: #if there's data, build a table to show it
             self.widgets["table_canvas"] = tk.Canvas(self.root,
                                                      highlightthickness=0,
                                                      background="White")
@@ -682,6 +682,7 @@ class BudgetTracker:
                     scrollregion=self.widgets["table_canvas"].bbox("all")))
             self.widgets["table_canvas"].bind_all("<MouseWheel>", self.on_mousewheel)
             self.widgets["status_msg"].configure(text="")
+            #define column headings
             ttk.Style().configure("Bold.TLabel", font=("Arial", "10", "bold"))
             ttk.Label(table_frame, text="Date", style="Bold.TLabel",
                       padding=(6, 0)).grid(row=0, column=1, sticky="w")
@@ -694,6 +695,7 @@ class BudgetTracker:
 
             self.widgets["data_entry_cbuttons"] = []
             self.data_entry_ids = []
+            #fill table with data
             for i, row in enumerate(table_data):
                 self.widgets["data_entry_cbuttons"].append(ttk.Checkbutton(table_frame,
                                             command=self.is_any_row_checked))
