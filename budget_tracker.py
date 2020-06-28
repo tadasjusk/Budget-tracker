@@ -80,9 +80,9 @@ class EntryFrame(tk.Toplevel):
         
         self.var_category = tk.StringVar()
 
-        categories = {'Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
+        categories = ['Groceries', 'Shopping', 'Entertainment', 'Restaurants/Bars',
                       'Subscriptions', 'Rent', 'Sports', 'Transport',
-                      'Debt', 'Salary', 'Cash withdrawal', 'Other'}
+                      'Debt', 'Salary', 'Cash withdrawal', 'Other']
         ttk.OptionMenu(self,
                        self.var_category,
                        'Groceries',
@@ -165,15 +165,18 @@ class EntryFrame(tk.Toplevel):
                         self.status_message.set("Created a new 'transactions' table\n")
                     else:
                         raise
+            entry_string = [str(item) for item in entry]
 
             if len(self.status_message.get().split("\n")) > 10: #number of lines more than 10 
                 self.status_message.set(
                     "{}".format('\n'.join((self.status_message.get().split("\n"))[1:]))
-                    + f"{now} " + "Succesfully inserted into database\n")
+                    + f"{now} "
+                    + f"Succesfully inserted into database: {entry_string}\n")
             else:
                 self.status_message.set(
                     self.status_message.get()
-                    + f"{now} " + "Succesfully inserted into database\n")
+                    + f"{now} "
+                    + f"Succesfully inserted into database: {entry_string}\n")
             self.widgets["entry_value"].delete(0, "end")
             self.widgets["entry_description"].delete(0, "end")
 
