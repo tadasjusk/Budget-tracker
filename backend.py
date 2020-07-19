@@ -7,6 +7,7 @@ create_table(conn, create_table_sql),
 create_transaction(conn, transaction),
 select_transactions(conn, date_from, date_to, *args),
 get_balance(conn, date_from, date_to, *args),
+get_expenses_by_category(conn, date_from, date_to, *args),
 delete_transactions(conn, ids)
 """
 
@@ -53,13 +54,13 @@ def select_transactions(conn, date_from, date_to, *args):
     if len(args) == 1:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[0]))
     if len(args) == 2:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         AND desc LIKE ?
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[0], '%'+args[1]+'%'))
@@ -68,14 +69,14 @@ def select_transactions(conn, date_from, date_to, *args):
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[1], args[2], args[2]))
     if len(args) == 4:
         cur.execute('''SELECT * FROM transactions
                         WHERE date BETWEEN ? AND ?
                         AND value BETWEEN ? AND ?
-                        AND (type = ? OR ? = 'All')
+                        AND (categ = ? OR ? = 'All')
                         AND desc LIKE ?
                         ORDER BY date  ''',
                     (date_from, date_to, args[0], args[1], args[2], args[2],
@@ -118,6 +119,38 @@ def get_balance(conn, date_from, date_to, *args):
             expenses += row[2]*multiplier
     return {"Expenses":expenses, "Received":income, "Total":total}
 
+def get_expenses_by_category(conn, date_from, date_to, *args):
+    """Returns total expenses for each category found
+
+    Parameters:
+    conn (Connection): Connection object
+    date_from (string): Earliest date to select entries from
+    data_to (string): Latest date to select entries from
+    *args: Variable length argument list
+        Possible argument combinations:
+        (string): Category
+        (string): Category, (string): Search
+        (float): Min_value, (float): Max_value, (string): Category
+        (float): Min_value, (float): Max_value, (string): Category, (string): Search
+    Returns:
+        dict: Balance for each category found
+    """
+    rows = select_transactions(conn, date_from, date_to, *args)
+    expenses_by_category = {}
+    for row in rows:
+        if row[3] == "£":
+            multiplier = 1
+        elif row[3] == "€":
+            multiplier = 0.9
+        elif row[3] == "$":
+            multiplier = 0.8
+        try:
+            expenses_by_category[f"{row[5]}"] += float(row[2])*multiplier
+        except KeyError:
+            expenses_by_category[f"{row[5]}"] = float(row[2])*multiplier
+    return expenses_by_category
+
+
 def delete_transactions(conn, ids):
     """Delete entries from 'transactions' table given their id's.
 
@@ -129,16 +162,24 @@ def delete_transactions(conn, ids):
         cur.execute("DELETE from transactions WHERE id=? ", (item,))
     conn.commit()
 
-def create_table(conn, create_table_sql):
+def create_transactions_table(conn):
     """Create a table from the create_table_sql statement.
     Parameters:
         conn (Connection): Connection object
         create_table_sql (String): a CREATE TABLE statement
 
     """
+    sql_create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
+                                        id integer PRIMARY KEY,
+                                        date text,
+                                        value float,
+                                        currency text,
+                                        desc text,
+                                        categ text
+                                    ); """
     try:
         c = conn.cursor()
-        c.execute(create_table_sql)
+        c.execute(sql_create_transactions_table)
     except sqlite3.Error as e:
         print(e, file=sys.stderr)
 
@@ -149,7 +190,7 @@ def create_transaction(conn, transaction):
         conn (Connection): Connection object
         transaction (Tuple): Tuple containing data to be inserted to table
     """
-    sql = ''' INSERT INTO transactions(date, value, currency, desc, type)
+    sql = ''' INSERT INTO transactions(date, value, currency, desc, categ)
               VALUES(?, ?, ?, ?, ?) '''
     cur = conn.cursor()
     cur.execute(sql, transaction)
@@ -162,7 +203,7 @@ def main():
                                         value float,
                                         currency text,
                                         desc text,
-                                        type text
+                                        categ text
                                     ); """
 
     # create a database connection
